@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Controller</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --pink: #ff00cc;
+            --neon: #39ff14;
+        }
+
+        * {
+            font-weight: bold !important;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #5a4636;
+            color: #fff;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+
+        .panel {
+            background: #222;
+            padding: 15px;
+            border-radius: 10px;
+            border-top: 4px solid var(--pink);
+            margin-bottom: 15px;
+        }
+
+        h3 {
+            margin-top: 0;
+            color: var(--pink);
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .excel-upload-wrapper {
+            background: #333;
+            border: 2px dashed var(--neon);
+            padding: 25px;
+            text-align: center;
+            border-radius: 8px;
+            transition: 0.3s;
+            position: relative;
+        }
+
+        .excel-upload-wrapper:hover {
+            background: #3d3d3d;
+            border-color: #fff;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .custom-file-upload {
+            display: inline-block;
+            padding: 12px 25px;
+            cursor: pointer;
+            background: var(--neon);
+            color: #000;
+            border-radius: 5px;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+
+        #file-name-display {
+            display: block;
+            margin-top: 10px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .grid-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            border: none;
+            transition: 0.2s;
+            background: #39ff14;
+            color: black;
+            text-transform: uppercase;
+        }
+
+        button:hover:not(:disabled) {
+            background: orange !important;
+            color: white !important;
+            transform: scale(1.02);
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-round {
+            background: #39ff14;
+            color: black;
+        }
+
+        .btn-reveal-all {
+            background: aqua;
+            color: black;
+            width: 100%;
+            margin-top: 10px;
+            border: 1px solid #00d9ff;
+        }
+
+        .btn-reset {
+            background: red;
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+            border: 1px solid #f00;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .modal-content {
+            background: #222;
+            margin: 10% auto;
+            padding: 30px;
+            width: 550px;
+            border-radius: 15px;
+            border: 3px solid var(--pink);
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 0, 204, 0.5);
+        }
+
+        .category-option {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 15px;
+            background: #111;
+            color: var(--neon);
+            border: 2px solid var(--neon);
+            font-size: 1.1rem;
+        }
+
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+            background: #000;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .key {
+            padding: 12px 2px;
+            font-size: 1.1rem;
+            background: green;
+            color: white;
+        }
+
+        .key.used {
+            background: #111;
+            color: #555 !important;
+            opacity: 0.4;
+            pointer-events: none;
+            border: 1px solid #222;
+        }
+
+        .pos-control {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+
+        .pos-input-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0;
+            min-height: 20px;
+        }
+
+        .pos-input-grid input {
+            width: 45px;
+            padding: 8px;
+            text-align: center;
+            background: #000;
+            color: var(--neon);
+            border: 1px solid var(--neon);
+            border-radius: 4px;
+        }
+
+        .btn-action {
+            background: var(--pink);
+            color: #fff;
+            padding: 12px;
+            font-size: 0.85rem;
+            flex: 1;
+        }
+
+        .quick-controls {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .btn-quick {
+            background: purple;
+            color: white;
+            flex: 1;
+            font-size: 0.7rem;
+            padding: 8px 2px;
+        }
+
+        .st-val {
+            color: var(--neon);
+            font-size: 1.2rem;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .btn-close-popup {
+            background: #555;
+            color: white;
+            padding: 10px 30px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+
+        audio {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="left-col">
+        <div class="panel">
+            <h3>1. NHẬP DỮ LIỆU EXCEL</h3>
+            <div class="excel-upload-wrapper">
+                <label for="excelFile" class="custom-file-upload">📁 TẢI FILE PUZZLEBOARD.XLSX</label>
+                <input type="file" id="excelFile" accept=".xlsx, .xls">
+                <span id="file-name-display">Chưa chọn tệp nào</span>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>2. HỆ THỐNG VÒNG THI</h3>
+            <div class="grid-buttons" id="round-list">
+                <button onclick="handleRound('Đoán Nhanh 1', false)">Đoán nhanh 1</button>
+                <button onclick="handleRound('Đoán Nhanh 2', false)">Đoán nhanh 2</button>
+                <button onclick="handleRound('Đoán Nhanh 3', false)">Đoán nhanh 3</button>
+                <button class="btn-round" onclick="handleRound('Vòng 1', true)">Vòng 1</button>
+                <button class="btn-round" onclick="handleRound('Vòng 2', true)">Vòng 2</button>
+                <button class="btn-round" onclick="handleRound('Vòng 3', true)">Vòng 3</button>
+                <button class="btn-round" onclick="handleRound('ĐNLH 1', false)">ĐNLH 1</button>
+                <button class="btn-round" onclick="handleRound('ĐNLH 2', false)">ĐNLH 2</button>
+                <button class="btn-round" onclick="handleRound('ĐNLH 3', false)">ĐNLH 3</button>
+                <button class="btn-round" onclick="handleRound('Vòng 4', true)">Vòng 4</button>
+                <button class="btn-round" onclick="handleRound('Vòng 5', true)">Vòng 5</button>
+                <button class="btn-round" onclick="handleRound('Vòng phụ', true)">Vòng phụ</button>
+                <button class="btn-round" onclick="handleRound('Vòng Đặc biệt', true)">Vòng ĐB</button>
+            </div>
+
+            <p style="color:var(--pink); margin: 15px 0 5px 0; font-size: 0.8rem;">CÂU HỎI PHỤ VÒNG ĐẶC BIỆT:</p>
+            <div class="grid-buttons">
+                <button style="background: #ff00cc; color: white;" onclick="handleRound('ĐB5.1', true)">ĐB 5.1</button>
+                <button style="background: #ff00cc; color: white;" onclick="handleRound('ĐB5.2', false)">ĐB 5.2</button>
+                <button style="background: #ff00cc; color: white;" onclick="handleRound('ĐB5.3', false)">ĐB 5.3</button>
+                <button style="background: #ff00cc; color: white;" onclick="handleRound('ĐB5.4', false)">ĐB 5.4</button>
+                <button style="background: #ff00cc; color: white;" onclick="handleRound('ĐB5.5', false)">ĐB 5.5</button>
+            </div>
+
+            <p style="color:var(--pink); margin: 15px 0 5px 0; font-size: 0.8rem;">ĐIỀU KHIỂN CHUÔNG TÍN HIỆU:</p>
+            <div class="grid-buttons">
+                <button style="background: aqua; color: black;" onclick="openBuzzer()">Mở chuông</button>
+                <button style="background: aqua; color: black;" onclick="lockBuzzer()">Khóa chuông</button>
+                <button style="background: aqua; color: black;" onclick="resetBuzzer()">Reset chuông</button>
+            </div>
+
+            <button id="btn-ngiah" onclick="revealNghia()"
+                style="display:none; width:100%; margin-top:10px; background: purple; color: white;">
+                MỞ CÁC CHỮ: N, G, H, I, A
+            </button>
+
+            <div id="special-guess-panel"
+                style="display:none; margin-top:15px; border: 1px dashed var(--pink); padding: 10px; background: #1a1a1a;">
+                <p style="color:var(--neon); margin:0 0 10px 0; font-size:0.8rem;">CHỮ CÁI ĐOÁN THÊM (TỐI ĐA 10):</p>
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom:10px;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                </div>
+                <button onclick="processSpecialGuesses()"
+                    style="width:100%; background: var(--neon); color: black; padding: 8px; font-size: 0.8rem;">
+                    XÁC NHẬN
+                </button>
+            </div>
+
+            <div id="quick-panel" style="display:none; margin-top:15px; border: 1px dashed #666; padding: 10px;">
+                <p style="color:var(--neon); margin:0 0 10px 0; font-size:0.8rem;">ĐIỀU KHIỂN ĐOÁN NHANH:</p>
+                <div class="quick-controls">
+                    <button class="btn-quick" onclick="quickStart()">Bắt đầu hiện chữ</button>
+                    <button class="btn-quick" onclick="quickStop()">Dừng hiện chữ</button>
+                    <button class="btn-quick" onclick="quickResume()">Tiếp tục hiện chữ</button>
+                </div>
+                <div class="quick-controls" style="margin-top: 5px;">
+                    <button style="background: red; color: white; flex: 1; font-size: 0.75rem; padding: 8px 2px;"
+                        onclick="resetCountdown()">Reset Đồng Hồ (45s)</button>
+                </div>
+            </div>
+
+            <div id="special-round-timer-panel"
+                style="display:none; margin-top:15px; border: 1px dashed #666; padding: 10px;">
+                <p style="color:var(--neon); margin:0 0 10px 0; font-size:0.8rem;">ĐIỀU KHIỂN ĐỒNG HỒ VÒNG PHỤ & ĐB:</p>
+                <div class="quick-controls">
+                    <button style="background: blue; color: white; flex: 1; font-size: 0.75rem; padding: 8px 2px;"
+                        onclick="setTimer(30)">30 Giây</button>
+                    <button style="background: yellow; color: black; flex: 1; font-size: 0.75rem; padding: 8px 2px;"
+                        onclick="setTimer(10)">10 Giây</button>
+                    <button style="background: red; color: white; flex: 1; font-size: 0.75rem; padding: 8px 2px;"
+                        onclick="resetCountdown()">Reset Đồng Hồ</button>
+                </div>
+            </div>
+
+            <button class="btn-reveal-all" onclick="revealAll()">HIỆN TOÀN BỘ Ô CHỮ (CÓ DẤU)</button>
+            <button class="btn-reset" onclick="resetBoard()">RESET BẢNG TRỐNG</button>
+        </div>
+
+        <div style="margin-top: 10px; display: flex; gap: 8px;margin-bottom: 10px;">
+            <button type="button" onclick="triggerSound('Nhac_Mo_chu_US.mp3')"
+                style="background-color: #ff00cc; color: white;">Nhạc Mở chữ US</button>
+            <button type="button" onclick="triggerSound('Nhac_mo_chu_VN_1.mp3')"
+                style="background-color: #ff00cc; color: white;">Nhạc mở chữ VN 1</button>
+            <button type="button" onclick="triggerSound('Nhac_mo_chu_VN_2.mp3')"
+                style="background-color: #ff00cc; color: white;">Nhạc mở chữ VN 2</button>
+        </div>
+
+        <div class="panel">
+            <h3>3. BÀN PHÍM ĐIỀU KHIỂN</h3>
+            <div id="keyboard" class="keyboard"></div>
+
+            <div class="pos-control">
+                <p style="margin-top:0; font-size:0.9rem; color:var(--pink);">MỞ Ô THEO VỊ TRÍ:</p>
+                <input type="number" id="numPos" placeholder="Nhập số ô cần mở..."
+                    style="width: 100%; padding: 12px; background:#000; color:#fff; border:1px solid #555; box-sizing: border-box;"
+                    oninput="generatePosInputs()">
+
+                <div id="posContainer" class="pos-input-grid"></div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnPos1" class="btn-action" onclick="processSequence(1)">Mở lần 1: Đánh dấu</button>
+                    <button id="btnPos2" class="btn-action" onclick="processSequence(2)">Mở lần 2: Mở chữ</button>
+                </div>
+                <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;">
+                    <button type="button" onclick="triggerSound('Mo_o_US.mp3')"
+                        style="background-color: #39ff14; color: black;">Mở ô US</button>
+                    <button type="button" onclick="triggerSound('Mo_o_Lan_1_VN_1.mp3')"
+                        style="background-color: #39ff14; color: black;">Mở ô Lần 1 VN 1</button>
+                    <button type="button" onclick="triggerSound('Mo_o_Lan_1_VN_2.mp3')"
+                        style="background-color: #39ff14; color: black;">Mở ô Lần 1 VN 2</button>
+                    <button type="button" onclick="triggerSound('Mo_o_Lan_2_VN_1.mp3')"
+                        style="background-color: #39ff14; color: black;">Mở ô Lần 2 VN 1</button>
+                    <button type="button" onclick="triggerSound('Mo_o_Lan_2_VN_2.mp3')"
+                        style="background-color: #39ff14; color: black;">Mở ô Lần 2 VN 2</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-col">
+        <div class="panel">
+            <h3>TRẠNG THÁI HIỆN TẠI</h3>
+            <p>Vòng: <span id="st-round" class="st-val">-</span></p>
+            <p>Chủ đề: <span id="st-cat" class="st-val">-</span></p>
+            <p>Ô chữ: <span id="st-puz" class="st-val">-</span></p>
+            <p>Đồng hồ ĐB: <span id="st-timer" class="st-val">45</span>s</p>
+        </div>
+
+        <div class="color-control-section" style="margin-top: 20px; border-top: 1px solid #333;">
+            <h3 style="color: #ff00cc; font-size: 14px; margin-bottom: 10px;">MÀU VIỀN Ô CHỮ</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button onclick="changeBorderColor('rgb(128,0,128)')"
+                    style="background: transparent; border: 2px solid rgb(128,0,128); color: white; cursor: pointer; padding: 5px;">Tím</button>
+                <button onclick="changeBorderColor('rgb(255,0,0)')"
+                    style="background: transparent; border: 2px solid rgb(255,0,0); color: white; cursor: pointer; padding: 5px;">Đỏ</button>
+                <button onclick="changeBorderColor('rgb(255,255,0)')"
+                    style="background: transparent; border: 2px solid rgb(255,255,0); color: white; cursor: pointer; padding: 5px;">Vàng</button>
+                <button onclick="changeBorderColor('rgb(0,0,255)')"
+                    style="background: transparent; border: 2px solid rgb(0,0,255); color: white; cursor: pointer; padding: 5px;">Xanh</button>
+                <button onclick="changeBorderColor('rgb(0,255,0)')"
+                    style="background: transparent; border: 2px solid rgb(0, 255, 0); color: white; cursor: pointer; padding: 5px;">Xanh
+                    Lá</button>
+                <button onclick="changeBorderColor('rgb(255,255,255)')"
+                    style="background: #222; border: 2px solid rgb(255,255,255); color: #fff; cursor: pointer; padding: 5px; text-shadow: 0 0 2px #000;">Trắng</button>
+            </div>
+        </div>
+
+        <div class="score-control-section" style="margin-top: 20px;">
+            <div class="player-panel"
+                style="border: 1px solid #444; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
+                <p style="margin: 0 0 5px 0; color: red; font-size: 12px;">NC ĐỎ</p>
+                <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                    <div id="disp-red-total"
+                        style="flex: 1; padding: 5px; text-align: center; background:red; color:white;">0</div>
+                    <div id="disp-red-round"
+                        style="flex: 1; padding: 5px; text-align: center; background:red; color:white;">0</div>
+                </div>
+                <div style="margin-bottom: 5px; font-size: 11px; color: #fff;">
+                    <input type="checkbox" id="chk-red-last-spin" style="cursor: pointer;">
+                    <label for="chk-red-last-spin" style="cursor: pointer;">Lượt quay cuối cùng</label>
+                </div>
+                <input type="text" id="input-red"
+                    style="width:100%; padding:8px; background:#000; color:#fff; border:1px solid #555; margin-bottom:5px;"
+                    placeholder="Nhập điểm..." oninput="formatInput(this)">
+                <div style="display: flex; gap: 5px;">
+                    <button style="background:green; color:white; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="addScore('red', 'total')">TỔNG +</button>
+                    <button style="background:#39ff14; color:black; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="addScore('red', 'round')">VÒNG +</button>
+                    <button style="background:aqua; color:black; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="subScore('red', 'round')">VÒNG -</button>
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 5px;">
+                    <button onclick="updatePlayerLight('red', 'color')"
+                        style="background: #ff0000; color: #fff; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        màu</button>
+                    <button onclick="updatePlayerLight('red', 'black')"
+                        style="background: #000000; color: #fff; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        đen</button>
+                    <button onclick="updatePlayerLight('red', 'white')"
+                        style="background: #ffffff; color: #000; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        trắng</button>
+                </div>
+            </div>
+
+            <div class="player-panel"
+                style="border: 1px solid #444; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
+                <p style="margin: 0 0 5px 0; color: yellow; font-size: 12px;">NC VÀNG</p>
+                <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                    <div id="disp-yellow-total"
+                        style="flex: 1; padding: 5px; text-align: center; background:yellow; color:black;">0</div>
+                    <div id="disp-yellow-round"
+                        style="flex: 1; padding: 5px; text-align: center; background:yellow; color:black;">0</div>
+                </div>
+                <div style="margin-bottom: 5px; font-size: 11px; color: #fff;">
+                    <input type="checkbox" id="chk-yellow-last-spin" style="cursor: pointer;">
+                    <label for="chk-yellow-last-spin" style="cursor: pointer;">Lượt quay cuối cùng</label>
+                </div>
+                <input type="text" id="input-yellow"
+                    style="width:100%; padding:8px; background:#000; color:#fff; border:1px solid #555; margin-bottom:5px;"
+                    placeholder="Nhập điểm..." oninput="formatInput(this)">
+                <div style="display: flex; gap: 5px;">
+                    <button style="background:green; color:white; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="addScore('yellow', 'total')">TỔNG +</button>
+                    <button style="background:#39ff14; color:black; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="addScore('yellow', 'round')">VÒNG +</button>
+                    <button style="background:aqua; color:black; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="subScore('yellow', 'round')">VÒNG -</button>
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 5px;">
+                    <button onclick="updatePlayerLight('yellow', 'color')"
+                        style="background: #ffff00; color: #000; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        màu</button>
+                    <button onclick="updatePlayerLight('yellow', 'black')"
+                        style="background: #000000; color: #fff; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        đen</button>
+                    <button onclick="updatePlayerLight('yellow', 'white')"
+                        style="background: #ffffff; color: #000; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        trắng</button>
+                </div>
+            </div>
+
+            <div class="player-panel"
+                style="border: 1px solid #444; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
+                <p style="margin: 0 0 5px 0; color: #008cff; font-size: 12px;">NC XANH</p>
+                <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                    <div id="disp-blue-total"
+                        style="flex: 1; padding: 5px; text-align: center; background:blue; color:white;">0</div>
+                    <div id="disp-blue-round"
+                        style="flex: 1; padding: 5px; text-align: center; background:blue; color:white;">0</div>
+                </div>
+                <div style="margin-bottom: 5px; font-size: 11px; color: #fff;">
+                    <input type="checkbox" id="chk-blue-last-spin" style="cursor: pointer;">
+                    <label for="chk-blue-last-spin" style="cursor: pointer;">Lượt quay cuối cùng</label>
+                </div>
+                <input type="text" id="input-blue"
+                    style="width:100%; padding:8px; background:#000; color:#fff; border:1px solid #555; margin-bottom:5px;"
+                    placeholder="Nhập điểm..." oninput="formatInput(this)">
+                <div style="display: flex; gap: 5px;">
+                    <button style="background:green; color:white; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="addScore('blue', 'total')">TỔNG +</button>
+                    <button style="background:#39ff14; color:black; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="addScore('blue', 'round')">VÒNG +</button>
+                    <button style="background:aqua; color:black; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="subScore('blue', 'round')">VÒNG -</button>
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 5px;">
+                    <button onclick="updatePlayerLight('blue', 'color')"
+                        style="background: #0000ff; color: #fff; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        màu</button>
+                    <button onclick="updatePlayerLight('blue', 'black')"
+                        style="background: #000000; color: #fff; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        đen</button>
+                    <button onclick="updatePlayerLight('blue', 'white')"
+                        style="background: #ffffff; color: #000; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        trắng</button>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                <button style="background:purple; color:white;" onclick="resetScores('round')">RESET ĐIỂM VÒNG</button>
+                <button style="background:purple; color:white;" onclick="resetScores('total')">RESET ĐIỂM TỔNG</button>
+                <button style="background:blue; color:white;" onclick="toggleDisplayScore('round')">HIỆN ĐIỂM
+                    VÒNG</button>
+                <button style="background:blue; color:white;" onclick="toggleDisplayScore('total')">HIỆN ĐIỂM
+                    TỔNG</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle" style="color: var(--pink); margin-top: 0;"></h2>
+            <div id="modalBody" style="font-size: 1.1rem; margin: 20px 0; color: #fff;"></div>
+            <div id="modalActions"></div>
+            <button class="btn-close-popup" onclick="closePopup()">ĐÓNG</button>
+        </div>
+    </div>
+
+    <audio id="buzzerSound" src="buzzer.mp3" preload="auto"></audio>
+    <script>
+        var SUPABASE_URL = 'https://tfdgtdderkaergijhucb.supabase.co';
+        var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGd0ZGRlcmthZXJnaWpodWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NjM5MzksImV4cCI6MjA5NDAzOTkzOX0._BOLe4xH5ZuhfXfsdS63eY9N12wyomq58GG0toi1aIE';
+        var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const VIETNAMESE_ALPHABET = "AĂÂBCDĐEÊGHIKLMNOÔƠPQRSTUƯVXY".split('');
+        let excelData = [];
+        let currentRoundData = null;
+        let selectedRoundName = "";
+        let usedChars = [];
+        let currentPuzzleRaw = "";
+        let currentLayout = null;
+        let quickInterval = null;
+        let countdownInterval = null;
+        let countdownValue = 45;
+        let scores = { red: { total: 0, round: 0 }, yellow: { total: 0, round: 0 }, blue: { total: 0, round: 0 } };
+        let specialRoundCatIndex = 0;
+
+        const BLOCK_STARTS_12 = [3, 18, 33];
+        const BLOCK_STARTS_14 = [2, 17, 32];
+        let lastBuzzerState = 0;
+
+        window.onload = async () => {
+            await loadCurrentState();
+            renderKeyboard();
+
+            db.channel('controller_buzz').on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'wheel_game'
+            }, payload => {
+                const newData = payload.new;
+                if (!('buzzer_player' in newData)) return;
+                const bp = newData.buzzer_player;
+                const n = (bp === null || bp === undefined || bp === '') ? null : Number(bp);
+                const prev = (lastBuzzerState === null || lastBuzzerState === undefined || lastBuzzerState === '')
+                    ? null
+                    : Number(lastBuzzerState);
+                if (n != null && !isNaN(n) && [1, 2, 3].includes(n) && n !== prev) {
+                    playBuzzer();
+                    quickStop();
+                }
+                lastBuzzerState = bp;
+            }).subscribe();
+        };
+
+        async function triggerSound(fileName) {
+            // Thêm timestamp ngẫu nhiên để ép Realtime luôn nhận diện bản ghi thay đổi kể cả khi bấm trùng 1 nút liên tục
+            const soundSignal = fileName + "?t=" + Date.now();
+            const { error } = await db.from('wheel_game').update({ current_sound: soundSignal }).eq('id', 1);
+            if (error) console.error("Lỗi đồng bộ tín hiệu âm thanh:", error);
+            else console.log("Đã phát tín hiệu âm thanh thành công:", soundSignal);
+        }
+
+        function getPuzzleStringWithSpaces(layout, isTungHoanh = false) {
+            if (!layout || !Array.isArray(layout)) return "-";
+            const words = [];
+            let currentWord = "";
+
+            const isEmptyCell = (value) => {
+                if (value == null) return true;
+                const cell = String(value).trim();
+                return cell === "" || /^(null|undefined|nan)$/i.test(cell);
+            };
+
+            if (isTungHoanh) {
+                // 1. Quét hàng ngang
+                layout.forEach(row => {
+                    if (!Array.isArray(row)) return;
+                    currentWord = "";
+                    for (let i = 0; i < row.length; i++) {
+                        const char = row[i];
+                        if (!isEmptyCell(char)) {
+                            currentWord += String(char).trim();
+                        } else {
+                            // Chỉ lấy các từ có >= 2 ký tự để tránh các điểm giao cắt đơn lẻ
+                            if (currentWord.length > 1) words.push(currentWord);
+                            currentWord = "";
+                        }
+                    }
+                    if (currentWord.length > 1) words.push(currentWord);
+                });
+
+                // 2. Quét cột dọc
+                const numCols = Math.max(...layout.map(row => Array.isArray(row) ? row.length : 0));
+                for (let c = 0; c < numCols; c++) {
+                    currentWord = "";
+                    for (let r = 0; r < layout.length; r++) {
+                        if (layout[r] && !isEmptyCell(layout[r][c])) {
+                            currentWord += String(layout[r][c]).trim();
+                        } else {
+                            if (currentWord.length > 1) words.push(currentWord);
+                            currentWord = "";
+                        }
+                    }
+                    if (currentWord.length > 1) words.push(currentWord);
+                }
+            } else {
+                // Đọc bình thường (trái sang phải, trên xuống dưới)
+                layout.forEach(row => {
+                    if (!Array.isArray(row)) return;
+                    currentWord = "";
+                    for (let i = 0; i < row.length; i++) {
+                        const char = row[i];
+                        if (!isEmptyCell(char)) {
+                            currentWord += String(char).trim();
+                        } else if (currentWord !== "") {
+                            words.push(currentWord);
+                            currentWord = "";
+                        }
+                    }
+                    if (currentWord !== "") {
+                        words.push(currentWord);
+                    }
+                });
+            }
+
+            return words.join(" ") || "-";
+        }
+
+        async function loadCurrentState() {
+            const { data, error } = await db.from('wheel_game').select('*').eq('id', 1).maybeSingle();
+            if (data) {
+                scores.red.total = data.score_red_total || 0;
+                scores.red.round = data.score_red_round || 0;
+                scores.yellow.total = data.score_yellow_total || 0;
+                scores.yellow.round = data.score_yellow_round || 0;
+                scores.blue.total = data.score_blue_total || 0;
+                scores.blue.round = data.score_blue_round || 0;
+
+                usedChars = data.revealed_chars ? data.revealed_chars.split(',') : [];
+                currentPuzzleRaw = data.puzzle_text || "";
+
+                if (data.board_layout) {
+                    try { currentLayout = JSON.parse(data.board_layout); } catch (e) { currentLayout = null; }
+                }
+
+                if ('timer' in data) {
+                    countdownValue = data.timer !== null && data.timer !== undefined ? data.timer : 45;
+                    document.getElementById('st-timer').innerText = countdownValue;
+                }
+
+                document.getElementById('st-cat').innerText = data.category || "-";
+
+                // KIỂM TRA CHỦ ĐỀ TUNG HOÀNH KHI LOAD GAME
+                const catUpper = String(data.category || "").toUpperCase();
+                const isTungHoanh = catUpper.includes('TUNG HOÀNH') || catUpper.includes('TUNG HOANH');
+
+                document.getElementById('st-puz').innerText = currentLayout
+                    ? getPuzzleStringWithSpaces(currentLayout, isTungHoanh)
+                    : (currentPuzzleRaw || "-");
+
+                updateScoreUI();
+                renderKeyboard();
+                if ('buzzer_player' in data) lastBuzzerState = data.buzzer_player;
+            }
+        }
+
+        function getCell(row, idx) {
+            return (row && row[idx] != null && String(row[idx]).trim() !== '') ? String(row[idx]).trim() : "";
+        }
+
+        const COL_MAP = {
+            P1: { cat: 1, cols12: [3, 14], cols14: [2, 15] },
+            P2: { cat: 16, cols12: [18, 29], cols14: [17, 30] },
+            P3: { cat: 31, cols12: [33, 44], cols14: [32, 45] }
+        };
+
+        function buildLayoutFromBlock(block, config) {
+            const layout = [];
+            const { cols12, cols14 } = config;
+
+            const getChars = (rowArr, start, end) => {
+                if (!rowArr) return new Array(end - start + 1).fill("");
+                return rowArr.slice(start, end + 1).map(c => (c != null && c !== '') ? String(c).trim() : "");
+            };
+
+            layout.push(["", ...getChars(block[0], cols12[0], cols12[1]), ""]);
+            layout.push(getChars(block[1], cols14[0], cols14[1]));
+            layout.push(getChars(block[2], cols14[0], cols14[1]));
+            layout.push(["", ...getChars(block[3], cols12[0], cols12[1]), ""]);
+
+            return layout;
+        }
+
+        document.getElementById('excelFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            document.getElementById('file-name-display').innerText = "📁 " + file.name;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+
+                excelData = [];
+                for (let i = 1; i < rows.length; i += 4) {
+                    const block = rows.slice(i, i + 4);
+                    if (!block[0] || !block[0][0]) continue;
+
+                    const roundName = String(block[0][0]).trim();
+                    const options = [];
+
+                    ["P1", "P2", "P3"].forEach(key => {
+                        const config = COL_MAP[key];
+                        const catName = block[0][config.cat];
+                        if (catName) {
+                            options.push({
+                                cat: String(catName).trim(),
+                                layout: buildLayoutFromBlock(block, config)
+                            });
+                        }
+                    });
+
+                    if (options.length > 0) {
+                        excelData.push({ Vong: roundName, Options: options });
+                    }
+                }
+                showPopup("Hệ Thống", `Đã nạp file Excel thành công!`);
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function handleRound(roundName, hasPopup) {
+            selectedRoundName = roundName;
+            currentRoundData = excelData.find(d => String(d.Vong).toLowerCase().includes(roundName.toLowerCase()));
+            if (!currentRoundData) {
+                showPopup("Thông báo", "Không tìm thấy dữ liệu cho vòng: " + roundName);
+                return;
+            }
+
+            const isQuick = ["Đoán Nhanh", "ĐNLH"].some(t => roundName.includes(t)) || roundName.includes('ĐB5.');
+            const rnLower = roundName.toLowerCase();
+            const isSpecialRound = rnLower.includes('vòng đặc biệt') || rnLower.includes('vòng phụ') || roundName.includes('ĐB');
+            const isSpecialRoundOnly = rnLower.includes('vòng đặc biệt') || rnLower.includes('vòng phụ');
+
+            document.getElementById('quick-panel').style.display = isQuick ? 'block' : 'none';
+            document.getElementById('btn-ngiah').style.display = isSpecialRound ? 'block' : 'none';
+            document.getElementById('special-guess-panel').style.display = isSpecialRound ? 'block' : 'none';
+            document.getElementById('special-round-timer-panel').style.display = isSpecialRoundOnly ? 'block' : 'none';
+
+            if (!hasPopup) {
+                if (/ĐB5\.[2-5]/.test(roundName)) {
+                    const opt = currentRoundData.Options[specialRoundCatIndex] || currentRoundData.Options[0];
+                    sendToBoard(opt.cat, opt.layout);
+                } else {
+                    sendToBoard(currentRoundData.Options[0].cat, currentRoundData.Options[0].layout);
+                }
+            } else {
+                const actions = `
+            <button onclick="loadFixedPuzzle()" style="background: var(--pink);color: white; width: 100%; padding: 15px; margin-bottom: 10px;">Ô CHỮ CỐ ĐỊNH</button>
+            <button onclick="showCategoryPicker()" style="background: red;color: white; width: 100%; padding: 15px;">CHỌN 1 TRONG 3 CHỦ ĐỀ</button>
+        `;
+                showPopup(roundName, "Lựa chọn chế độ:", actions);
+            }
+        }
+
+        function loadFixedPuzzle() {
+            if (selectedRoundName === 'ĐB5.1') {
+                specialRoundCatIndex = 0;
+            }
+            sendToBoard(currentRoundData.Options[0].cat, currentRoundData.Options[0].layout);
+            closePopup();
+        }
+
+        function showCategoryPicker() {
+            let btns = ``;
+            currentRoundData.Options.forEach((opt, idx) => {
+                btns += `<button class="category-option" onclick="selectCategoryByIndex(${idx}); closePopup();">${opt.cat.toUpperCase()}</button>`;
+            });
+            showPopup(selectedRoundName, "Danh sách chủ đề:", btns);
+        }
+
+        function selectCategoryByIndex(idx) {
+            if (selectedRoundName === 'ĐB5.1') {
+                specialRoundCatIndex = idx;
+            }
+            const opt = currentRoundData.Options[idx];
+            if (opt) sendToBoard(opt.cat, opt.layout);
+        }
+
+        async function sendToBoard(cat, layout) {
+            currentLayout = layout;
+
+            // KIỂM TRA TÊN CHỦ ĐỀ TRƯỚC KHI TRÍCH XUẤT CHỮ
+            const catUpper = String(cat || "").toUpperCase();
+            const isTungHoanh = catUpper.includes('TUNG HOÀNH') || catUpper.includes('TUNG HOANH');
+            const rawText = getPuzzleStringWithSpaces(layout, isTungHoanh);
+
+            currentPuzzleRaw = rawText;
+            usedChars = [];
+
+            const { error } = await db.from('wheel_game').update({
+                puzzle_text: rawText,
+                category: String(cat).toUpperCase(),
+                revealed_chars: "",
+                pending_positions: "",
+                marked_positions: "",
+                revealed_positions: "",
+                board_layout: JSON.stringify(layout),
+                is_full_reveal: false
+            }).eq('id', 1);
+
+            if (!error) {
+                document.getElementById('st-round').innerText = selectedRoundName;
+                document.getElementById('st-cat').innerText = cat;
+                document.getElementById('st-puz').innerText = rawText;
+                renderKeyboard();
+            }
+        }
+
+        function generatePosInputs() {
+            const num = parseInt(document.getElementById('numPos').value);
+            const container = document.getElementById('posContainer');
+            container.innerHTML = '';
+            if (isNaN(num) || num <= 0) return;
+            for (let i = 0; i < num; i++) {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.placeholder = '#' + (i + 1);
+                input.className = 'pos-item';
+                container.appendChild(input);
+            }
+        }
+
+        function rcToPosition(r, c) {
+            if (r === 0) { if (c < 1 || c > 12) return null; return c; }
+            if (r === 1) { if (c < 0 || c > 13) return null; return 13 + c; }
+            if (r === 2) { if (c < 0 || c > 13) return null; return 27 + c; }
+            if (r === 3) { if (c < 1 || c > 12) return null; return 40 + c; }
+            return null;
+        }
+
+        function positionToRC(pos) {
+            if (pos < 1 || pos > 52) return null;
+            if (pos <= 12) return { r: 0, c: pos };
+            if (pos <= 26) return { r: 1, c: pos - 13 };
+            if (pos <= 40) return { r: 2, c: pos - 27 };
+            return { r: 3, c: pos - 40 };
+        }
+
+        async function processSequence(mode) {
+            const inputs = document.querySelectorAll('.pos-item');
+            let positions = Array.from(inputs)
+                .map(inp => parseInt(inp.value, 10))
+                .filter(v => !isNaN(v) && v >= 1 && v <= 52);
+            positions = [...new Set(positions)];
+
+            if (positions.length === 0 || !currentLayout) return;
+
+            const { data: row } = await db.from('wheel_game').select('marked_positions, revealed_positions, revealed_chars').eq('id', 1).maybeSingle();
+
+            let marked = (row && row.marked_positions) ? row.marked_positions.split(',').filter(Boolean).map(Number) : [];
+            let revPos = (row && row.revealed_positions) ? row.revealed_positions.split(',').filter(Boolean).map(Number) : [];
+
+            if (mode === 2) {
+                positions = positions.filter(pos => marked.includes(pos));
+                if (positions.length === 0) return;
+            }
+
+            for (let i = 0; i < positions.length; i++) {
+                const pos = positions[i];
+
+                if (mode === 1) {
+                    if (!marked.includes(pos)) marked.push(pos);
+                    await db.from('wheel_game').update({ marked_positions: marked.join(',') }).eq('id', 1);
+                }
+                else {
+                    const rc = positionToRC(pos);
+                    const ch = currentLayout[rc.r][rc.c];
+                    if (ch) {
+                        if (!revPos.includes(pos)) revPos.push(pos);
+                        marked = marked.filter(p => p !== pos);
+
+                        await db.from('wheel_game').update({
+                            marked_positions: marked.join(','),
+                            revealed_positions: revPos.join(',')
+                        }).eq('id', 1);
+                    }
+                }
+
+                if (i < positions.length - 1) {
+                    await new Promise(r => setTimeout(r, 1200));
+                }
+            }
+            await db.from('wheel_game').update({ pending_positions: '' }).eq('id', 1);
+        }
+
+        async function quickStart() {
+            if (selectedRoundName && selectedRoundName.includes('ĐB5.')) {
+                // Tự động mở chuông và đặt màu viền/ô về màu tím khi bấm Bắt đầu hiện chữ
+                await db.from('wheel_game').update({
+                    revealed_positions: "",
+                    marked_positions: "",
+                    pending_positions: "",
+                    revealed_chars: "",
+                    is_buzzer_locked: false,
+                    buzzer_player: "",
+                    border_color: 'rgb(128,0,128)'
+                }).eq('id', 1);
+                usedChars = [];
+                renderKeyboard();
+
+                await revealNghia();
+
+                setTimeout(() => {
+                    quickResume();
+                }, 1500);
+            } else {
+                usedChars = [];
+                await db.from('wheel_game').update({ revealed_chars: "", pending_positions: "" }).eq('id', 1);
+                quickResume();
+            }
+        }
+
+        function quickStop() {
+            if (quickInterval) clearInterval(quickInterval);
+            stopCountdown();
+        }
+
+        async function quickResume() {
+            if (quickInterval) clearInterval(quickInterval);
+
+            if (selectedRoundName && selectedRoundName.includes('ĐB5.')) {
+                // Tự động mở chuông và trả màu viền/ô về màu tím khi bấm Tiếp tục hiện chữ
+                await db.from('wheel_game').update({
+                    is_buzzer_locked: false,
+                    buzzer_player: "",
+                    border_color: 'rgb(128,0,128)'
+                }).eq('id', 1);
+
+                startCountdown();
+            }
+
+            quickInterval = setInterval(async () => {
+                const { data } = await db.from('wheel_game').select('revealed_positions').eq('id', 1).single();
+                let revPos = data.revealed_positions ? data.revealed_positions.split(',').map(Number) : [];
+
+                let availablePositions = [];
+                for (let r = 0; r < 4; r++) {
+                    for (let c = 0; c < 14; c++) {
+                        let char = currentLayout[r][c];
+                        if (char && char.trim() !== "") {
+                            let pos = rcToPosition(r, c);
+                            if (pos && !revPos.includes(pos)) {
+                                availablePositions.push(pos);
+                            }
+                        }
+                    }
+                }
+
+                if (availablePositions.length === 0) {
+                    clearInterval(quickInterval);
+                    return;
+                }
+
+                const randomPos = availablePositions[Math.floor(Math.random() * availablePositions.length)];
+                revPos.push(randomPos);
+
+                await db.from('wheel_game').update({
+                    revealed_positions: revPos.join(',')
+                }).eq('id', 1);
+
+            }, 700);
+        }
+
+        function startCountdown() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            countdownInterval = setInterval(async () => {
+                if (countdownValue > 0) {
+                    countdownValue--;
+                    document.getElementById('st-timer').innerText = countdownValue;
+
+                    if (countdownValue === 0) {
+                        quickStop();
+                        await db.from('wheel_game').update({
+                            timer: 0,
+                            is_buzzer_locked: true
+                        }).eq('id', 1);
+                    } else {
+                        await db.from('wheel_game').update({ timer: countdownValue }).eq('id', 1);
+                    }
+                } else {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+        }
+
+        function stopCountdown() {
+            if (countdownInterval) clearInterval(countdownInterval);
+        }
+
+        async function resetCountdown() {
+            countdownValue = 45;
+            document.getElementById('st-timer').innerText = countdownValue;
+            stopCountdown();
+            await db.from('wheel_game').update({ timer: countdownValue }).eq('id', 1);
+        }
+
+        async function setTimer(seconds) {
+            countdownValue = seconds;
+            document.getElementById('st-timer').innerText = countdownValue;
+            stopCountdown();
+            await db.from('wheel_game').update({ timer: countdownValue }).eq('id', 1);
+            startCountdown();
+        }
+
+        async function revealNghia() {
+            if (!currentLayout) return;
+
+            const targetChars = ['N', 'G', 'H', 'I', 'A'];
+            let foundPositions = [];
+
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 14; c++) {
+                    let cellChar = currentLayout[r][c];
+                    if (cellChar) {
+                        if (cellChar === 'Ă' || cellChar === 'Â') continue;
+
+                        let norm = cellChar.normalize('NFD')
+                            .replace(/[̣̀́̃̉]/g, '')
+                            .normalize('NFC')
+                            .toUpperCase();
+
+                        if (targetChars.includes(norm)) {
+                            let pos = rcToPosition(r, c);
+                            if (pos) foundPositions.push(pos);
+                        }
+                    }
+                }
+            }
+
+            if (selectedRoundName.includes('ĐB5.')) {
+                if (foundPositions.length === 0) return;
+
+                const { data: row } = await db.from('wheel_game').select('revealed_positions, marked_positions').eq('id', 1).maybeSingle();
+                let revPos = (row && row.revealed_positions) ? row.revealed_positions.split(',').filter(Boolean).map(Number) : [];
+                let marked = (row && row.marked_positions) ? row.marked_positions.split(',').filter(Boolean).map(Number) : [];
+
+                foundPositions.forEach(pos => {
+                    if (!revPos.includes(pos)) revPos.push(pos);
+                    marked = marked.filter(p => p !== pos);
+                });
+
+                targetChars.forEach(char => {
+                    if (!usedChars.includes(char)) usedChars.push(char);
+                });
+                renderKeyboard();
+
+                await db.from('wheel_game').update({
+                    revealed_positions: revPos.join(','),
+                    marked_positions: marked.join(','),
+                    pending_positions: '',
+                    revealed_chars: usedChars.join(',')
+                }).eq('id', 1);
+
+                document.getElementById('numPos').value = "";
+                generatePosInputs();
+            } else {
+                void fillPositionsToController(foundPositions);
+            }
+        }
+
+        async function revealAll() {
+            usedChars = [...VIETNAMESE_ALPHABET];
+            await db.from('wheel_game').update({
+                revealed_chars: usedChars.join(','),
+                pending_positions: "",
+                is_full_reveal: true
+            }).eq('id', 1);
+            renderKeyboard();
+        }
+
+        async function resetBoard() {
+            quickStop();
+            // Tự động chuyển màu viền về màu tím (rgb(128,0,128)) khi reset bảng trống
+            await db.from('wheel_game').update({
+                puzzle_text: "", category: "", revealed_chars: "",
+                pending_positions: "",
+                marked_positions: "", revealed_positions: "",
+                board_layout: "[]", is_full_reveal: false,
+                border_color: 'rgb(128,0,128)'
+            }).eq('id', 1);
+            usedChars = []; currentLayout = null; currentPuzzleRaw = "";
+            document.getElementById('st-puz').innerText = "-";
+            document.getElementById('st-cat').innerText = "-";
+            renderKeyboard();
+        }
+
+        async function pressKey(char) {
+            if (!usedChars.includes(char)) {
+                let positions = [];
+
+                const { data: row } = await db.from('wheel_game').select('revealed_positions').eq('id', 1).maybeSingle();
+                let revPos = (row && row.revealed_positions) ? row.revealed_positions.split(',').filter(Boolean).map(Number) : [];
+
+                if (currentLayout) {
+                    for (let r = 0; r < 4; r++) {
+                        for (let c = 0; c < 14; c++) {
+                            let cellChar = currentLayout[r][c];
+                            if (cellChar) {
+                                let norm = cellChar.normalize('NFD')
+                                    .replace(/[̣̀́̃̉]/g, '')
+                                    .normalize('NFC')
+                                    .toUpperCase();
+
+                                if (norm === char) {
+                                    let pos = rcToPosition(r, c);
+                                    if (pos && !revPos.includes(pos)) {
+                                        positions.push(pos);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (positions.length > 0) {
+                    document.getElementById('numPos').value = positions.length;
+                    generatePosInputs();
+                    const inputs = document.querySelectorAll('.pos-item');
+                    positions.forEach((p, idx) => {
+                        if (inputs[idx]) inputs[idx].value = p;
+                    });
+                } else {
+                    document.getElementById('numPos').value = "";
+                    generatePosInputs();
+                }
+
+                usedChars.push(char);
+                renderKeyboard();
+
+                await db.from('wheel_game').update({
+                    revealed_chars: usedChars.join(','),
+                    pending_positions: positions.length > 0 ? positions.join(',') : ''
+                }).eq('id', 1);
+            }
+        }
+
+        function renderKeyboard() {
+            const kb = document.getElementById('keyboard');
+            kb.innerHTML = '';
+            VIETNAMESE_ALPHABET.forEach(char => {
+                const btn = document.createElement('button');
+                btn.innerText = char;
+                btn.className = 'key' + (usedChars.includes(char) ? ' used' : '');
+                btn.onclick = () => pressKey(char);
+                kb.appendChild(btn);
+            });
+        }
+
+        function showPopup(title, message, actionsHtml = "") {
+            document.getElementById('modalTitle').innerText = title.toUpperCase();
+            document.getElementById('modalBody').innerHTML = message;
+            document.getElementById('modalActions').innerHTML = actionsHtml;
+            document.getElementById('mainModal').style.display = 'block';
+        }
+        function closePopup() { document.getElementById('mainModal').style.display = 'none'; }
+
+        async function changeBorderColor(color) { await db.from('wheel_game').update({ border_color: color }).eq('id', 1); }
+
+        async function openBuzzer() {
+            await db.from('wheel_game').update({
+                is_buzzer_locked: false,
+                buzzer_player: ""
+            }).eq('id', 1);
+            await changeBorderColor('rgb(128,0,128)');
+        }
+
+        async function lockBuzzer() {
+            await db.from('wheel_game').update({
+                is_buzzer_locked: true
+            }).eq('id', 1);
+        }
+
+        async function resetBuzzer() {
+            const { data: currentGame } = await db.from('wheel_game')
+                .select('is_buzzer_locked')
+                .eq('id', 1)
+                .single();
+
+            const currentLockStatus = currentGame ? currentGame.is_buzzer_locked : false;
+
+            const { error } = await db.from('wheel_game').update({
+                buzzer_player: "",
+                is_buzzer_locked: currentLockStatus,
+                border_color: 'rgb(128,0,128)'
+            }).eq('id', 1);
+
+            if (error) {
+                console.error("Lỗi khi reset chuông:", error);
+            }
+        }
+
+        function formatInput(input) {
+            let val = input.value.replace(/\D/g, "");
+            input.value = val ? Number(val).toLocaleString('vi-VN') : "";
+        }
+        async function addScore(p, t) {
+            const val = parseInt(document.getElementById(`input-${p}`).value.replace(/\./g, "")) || 0;
+            scores[p][t] += val;
+
+            // Lấy trạng thái của ô tích chọn "Lượt quay cuối cùng" tương ứng với người chơi
+            const isLastSpin = document.getElementById(`chk-${p}-last-spin`)?.checked;
+
+            // Nếu là cộng điểm VÒNG và có TÍCH CHỌN lượt quay cuối cùng thì KHÔNG xóa textbox
+            if (!(t === 'round' && isLastSpin)) {
+                document.getElementById(`input-${p}`).value = "";
+            }
+
+            await syncScores();
+        }
+        async function subScore(p, t) {
+            const val = parseInt(document.getElementById(`input-${p}`).value.replace(/\./g, "")) || 0;
+            scores[p][t] -= val;
+            document.getElementById(`input-${p}`).value = "";
+            await syncScores();
+        }
+        async function resetScores(t) {
+            scores.red[t] = 0; scores.yellow[t] = 0; scores.blue[t] = 0;
+            await syncScores();
+        }
+        async function syncScores() {
+            await db.from('wheel_game').update({
+                score_red_total: scores.red.total, score_red_round: scores.red.round,
+                score_yellow_total: scores.yellow.total, score_yellow_round: scores.yellow.round,
+                score_blue_total: scores.blue.total, score_blue_round: scores.blue.round
+            }).eq('id', 1);
+            updateScoreUI();
+        }
+        function updateScoreUI() {
+            ['red', 'yellow', 'blue'].forEach(p => {
+                document.getElementById(`disp-${p}-total`).innerText = scores[p].total.toLocaleString('vi-VN');
+                document.getElementById(`disp-${p}-round`).innerText = scores[p].round.toLocaleString('vi-VN');
+            });
+        }
+        async function toggleDisplayScore(mode) {
+            await db.from('wheel_game').update({ score_display_mode: mode }).eq('id', 1);
+        }
+
+        function processSpecialGuesses() {
+            if (!currentLayout) return;
+
+            const inputs = document.querySelectorAll('.guess-input');
+            const guessedChars = Array.from(inputs)
+                .map(i => i.value.trim())
+                .filter(v => v !== "")
+                .map(v => removeVietnameseTones(v));
+
+            if (guessedChars.length === 0) {
+                showPopup("Thông báo", "Vui lòng nhập ít nhất 1 chữ cái.");
+                return;
+            }
+
+            let foundPositions = [];
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 14; c++) {
+                    let cellChar = currentLayout[r][c];
+                    if (cellChar) {
+                        let normCell = removeVietnameseTones(cellChar);
+
+                        if (guessedChars.includes(normCell)) {
+                            const pos = rcToPosition(r, c);
+                            if (pos != null) foundPositions.push(pos);
+                        }
+                    }
+                }
+            }
+
+            if (foundPositions.length > 0) {
+                void fillPositionsToController(foundPositions);
+            }
+        }
+
+        async function fillPositionsToController(positions) {
+            if (positions.length === 0) {
+                await db.from('wheel_game').update({ pending_positions: '' }).eq('id', 1);
+                return;
+            }
+
+            positions.sort((a, b) => a - b);
+
+            const numPosInput = document.getElementById('numPos');
+            numPosInput.value = positions.length;
+            generatePosInputs();
+
+            await new Promise(r => setTimeout(r, 50));
+            const posItems = document.querySelectorAll('.pos-item');
+            positions.forEach((p, idx) => {
+                if (posItems[idx]) posItems[idx].value = p;
+            });
+
+            await db.from('wheel_game').update({
+                pending_positions: positions.join(',')
+            }).eq('id', 1);
+        }
+
+        function removeVietnameseTones(str) {
+            if (!str) return "";
+            str = str.toUpperCase().trim();
+
+            str = str.replace(/[ÁÀẢÃẠ]/g, "A");
+            str = str.replace(/[ẮẰẲẴẶ]/g, "Ă");
+            str = str.replace(/[ẤẦẨẪẬ]/g, "Â");
+            str = str.replace(/[ÉÈẺẼẸ]/g, "E");
+            str = str.replace(/[ẾỀỂỄỆ]/g, "Ê");
+            str = str.replace(/[ÍÌỈĨỊ]/g, "I");
+            str = str.replace(/[ÓÒỎÕỌ]/g, "O");
+            str = str.replace(/[ỐỒỔỖỘ]/g, "Ô");
+            str = str.replace(/[ỚỜỞỠỢ]/g, "Ơ");
+            str = str.replace(/[ÚÙỦŨỤ]/g, "U");
+            str = str.replace(/[ỨỪỬỮỰ]/g, "Ư");
+            str = str.replace(/[ÝỲỶỸỴ]/g, "Y");
+            str = str.replace(/[Đ]/g, "Đ");
+
+            return str;
+        }
+
+        function playBuzzer() {
+            const sound = document.getElementById('buzzerSound');
+            if (sound) {
+                sound.currentTime = 0;
+                sound.play().catch(e => console.log("Yêu cầu tương tác để phát nhạc:", e));
+            }
+        }
+
+        async function updatePlayerLight(playerColor, lightType) {
+            let updateData = {};
+            updateData[`light_${playerColor}`] = lightType;
+
+            const { error } = await db.from('wheel_game')
+                .update(updateData)
+                .eq('id', 1);
+
+            if (error) {
+                console.error("Lỗi cập nhật trạng thái đèn:", error);
+            } else {
+                console.log(`Đã cập nhật đèn ${playerColor} thành ${lightType}`);
+            }
+        }
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.keyCode === 123) e.preventDefault();
+            if ((e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+
+</html>
