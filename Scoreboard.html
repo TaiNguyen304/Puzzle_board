@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Scoreboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            font-weight: bold !important;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #800080;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: stretch;
+            height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+
+        #score-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: stretch;
+            gap: 0;
+            height: 32vh;
+            width: 100%;
+        }
+
+        .score-box {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 5rem;
+            border: none;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .score-box.red {
+            background-color: #ff0000;
+            color: #fff;
+        }
+
+        .score-box.yellow {
+            background-color: #ffff00;
+            color: #000;
+        }
+
+        .score-box.blue {
+            background-color: #0000ff;
+            color: #fff;
+        }
+
+        audio {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="score-container">
+        <div class="score-box red" id="score-red">0</div>
+        <div class="score-box yellow" id="score-yellow">0</div>
+        <div class="score-box blue" id="score-blue">0</div>
+    </div>
+
+    <script>
+        var SUPABASE_URL = 'https://tfdgtdderkaergijhucb.supabase.co';
+        var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGd0ZGRlcmthZXJnaWpodWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NjM5MzksImV4cCI6MjA5NDAzOTkzOX0._BOLe4xH5ZuhfXfsdS63eY9N12wyomq58GG0toi1aIE';
+        var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        function formatScore(num) {
+            return (num || 0).toLocaleString('vi-VN');
+        }
+
+        async function init() {
+            const updateScores = (data) => {
+                const mode = data.score_display_mode || 'round';
+
+                const redEl = document.getElementById('score-red');
+                const yellowEl = document.getElementById('score-yellow');
+                const blueEl = document.getElementById('score-blue');
+
+                if (redEl) redEl.innerText = formatScore(data[`score_red_${mode}`]);
+                if (yellowEl) yellowEl.innerText = formatScore(data[`score_yellow_${mode}`]);
+                if (blueEl) blueEl.innerText = formatScore(data[`score_blue_${mode}`]);
+            };
+
+            // Get initial data
+            const { data } = await db.from('wheel_game').select('*').eq('id', 1).maybeSingle();
+            if (data) {
+                updateScores(data);
+            }
+
+            // Listen for real-time updates from Supabase
+            db.channel('scoreboard').on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'wheel_game'
+            }, payload => {
+                const newData = payload.new;
+                updateScores(newData);
+            }).subscribe();
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

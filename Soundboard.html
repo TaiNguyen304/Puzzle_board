@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Soundboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --purple-bg: purple;
+            --purple-btn: blue;
+            --purple-hover: orange;
+            --stop-btn: red;
+            --stop-hover: orange;
+        }
+
+        * {
+            font-weight: bold !important;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--purple-bg);
+            color: #ffffff;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .soundboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .soundboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .sound-btn {
+            background-color: var(--purple-btn);
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            border-radius: 8px;
+            padding: 20px 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .sound-btn:hover {
+            background-color: var(--purple-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .sound-btn:active {
+            transform: translateY(1px);
+        }
+
+        .stop-btn {
+            grid-column: span 4;
+            background-color: var(--stop-btn);
+            font-size: 1.3rem;
+            padding: 22px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .stop-btn {
+                grid-column: span 2;
+            }
+        }
+
+        .stop-btn:hover {
+            background-color: var(--stop-hover);
+        }
+
+        #status {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: yellow;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Bảng Điều Khiển Âm Thanh</h1>
+
+    <div class="soundboard-grid">
+        <button class="sound-btn" onclick="triggerSound('intro.mp3')">Intro</button>
+        <button class="sound-btn" onclick="triggerSound('open.mp3')">Open</button>
+        <button class="sound-btn" onclick="triggerSound('toss_up.mp3')">Toss Up</button>
+        <button class="sound-btn" onclick="triggerSound('toss_up_solve.mp3')">Toss up solve</button>
+        <button class="sound-btn" onclick="triggerSound('solve.mp3')">Solve</button>
+        <button class="sound-btn" onclick="triggerSound('mystery.mp3')">Mystery</button>
+        <button class="sound-btn" onclick="triggerSound('express_1.mp3')">Express 1</button>
+        <button class="sound-btn" onclick="triggerSound('express_2.mp3')">Express 2</button>
+        <button class="sound-btn" onclick="triggerSound('final_spin_bell.mp3')">Final Spin Bell</button>
+        <button class="sound-btn" onclick="triggerSound('final_spin.mp3')">Final Spin</button>
+        <button class="sound-btn" onclick="triggerSound('speed_up.mp3')">Speed up</button>
+        <button class="sound-btn" onclick="triggerSound('bonus_spin.mp3')">Bonus Spin</button>
+        <button class="sound-btn" onclick="triggerSound('nghia.mp3')">NGHIA</button>
+        <button class="sound-btn" onclick="triggerSound('3l.mp3')">3L</button>
+        <button class="sound-btn" onclick="triggerSound('10s.mp3')">10s</button>
+        <button class="sound-btn" onclick="triggerSound('bonus_win.mp3')">Bonus Win</button>
+        <button class="sound-btn" onclick="triggerSound('bonus_lose.mp3')">Bonus Lose</button>
+        <button class="sound-btn" onclick="triggerSound('bankrupt.mp3')">Bankrupt</button>
+
+        <button class="sound-btn stop-btn" onclick="triggerSound('STOP')">Dừng âm thanh</button>
+    </div>
+
+    <div id="status">Hệ thống sẵn sàng</div>
+
+    <script>
+        var SUPABASE_URL = 'https://tfdgtdderkaergijhucb.supabase.co';
+        var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGd0ZGRlcmthZXJnaWpodWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NjM5MzksImV4cCI6MjA5NDAzOTkzOX0._BOLe4xH5ZuhfXfsdS63eY9N12wyomq58GG0toi1aIE';
+        var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function triggerSound(soundName) {
+            const statusEl = document.getElementById('status');
+            statusEl.innerText = soundName === 'STOP' ? "Đang gửi lệnh dừng..." : `Đang kích hoạt: ${soundName}...`;
+            
+            // Cập nhật tên file âm thanh vào bảng wheel_game (id=1), kèm theo một chuỗi timestamp ngẫu nhiên ngầm định để kích hoạt sự kiện Realtime kể cả khi bấm trùng 1 nút liên tiếp
+            const uniqueSignal = soundName + '?' + Date.now();
+
+            const { error } = await db
+                .from('wheel_game')
+                .update({ current_sound: uniqueSignal })
+                .eq('id', 1);
+
+            if (error) {
+                console.error("Lỗi gửi âm thanh:", error);
+                statusEl.innerText = "Lỗi kết nối database!";
+            } else {
+                statusEl.innerText = soundName === 'STOP' ? "Đã dừng tất cả âm thanh" : `Đang phát: ${soundName}`;
+            }
+        }
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.keyCode === 123) e.preventDefault();
+            if ((e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>

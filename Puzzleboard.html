@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Puzzleboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --neon-green: #39ff14;
+            --vibrant-pink: #ff00cc;
+            --deep-bg: #001a00;
+            --border-color: rgb(128, 0, 128);
+        }
+
+        /* Font-weight bold cho toàn bộ văn bản trên bảng */
+        * {
+            font-weight: bold !important;
+        }
+
+        body {
+            background-color: #120A21;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+
+        #score-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 20px;
+        }
+
+        .score-box {
+            width: 220px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            border: 3px solid #fff;
+        }
+
+        .score-box.red {
+            background: #ff0000;
+            color: #fff;
+        }
+
+        .score-box.yellow {
+            background: #ffff00;
+            color: #000;
+        }
+
+        .score-box.blue {
+            background: #0000ff;
+            color: #fff;
+        }
+
+        /* Style cho ô đồng hồ bên cạnh ô màu xanh */
+        .score-box.timer-box {
+            background: #ff00ff;
+            color: #ffffff;
+            transition: background 0.3s ease, color 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        #category-display {
+            color: yellow;
+            font-size: 3rem;
+            margin-bottom: 25px;
+            text-shadow: 0 0 15px rgba(255, 255, 0, 0.8);
+            text-transform: uppercase;
+            user-select: none;
+        }
+
+        #board {
+            display: grid;
+            grid-template-rows: repeat(4, 1fr);
+            gap: 6px;
+            background: var(--deep-bg);
+            padding: 30px;
+            box-shadow: 0 0 60px rgb(128, 0, 128);
+            transition: all 0.5s ease;
+            border-radius: 20px;
+            position: relative;
+        }
+
+        #board::after {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            right: -6px;
+            bottom: -6px;
+            border: 3px solid var(--border-color);
+            border-radius: 24px;
+            pointer-events: none;
+        }
+
+        .row {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            width: fit-content;
+            margin: 0 auto;
+            user-select: none;
+        }
+
+        @font-face {
+            font-family: 'Helvetica-Bold';
+            src: url('Helvetica-Bold.ttf') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        .cell {
+            width: 80px;
+            height: 110px;
+            font-size: 70px;
+            box-sizing: border-box;
+            border: none;
+            border-radius: 5px;
+
+            background-image: url("Ô chữ.png");
+            background-size: 110% 110%;
+            background-position: center;
+            background-repeat: no-repeat;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            color: transparent;
+            user-select: none;
+
+            transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .cell.active {
+            background-image: none;
+            background-color: white;
+            box-shadow: inset 0 0 0 3px #000;
+            border-radius: 8px;
+        }
+
+        .cell.revealed {
+            background-image: none;
+            background-color: white;
+            box-shadow: inset 0 0 0 3px #000;
+            border-radius: 8px;
+            color: #000;
+            font-weight: bold;
+            font-family: 'Helvetica-Bold', sans-serif;
+        }
+
+        .cell.marked {
+            background-image: none;
+            background-color: blue;
+            box-shadow: inset 0 0 0 3px #000;
+            border-radius: 8px;
+            color: transparent;
+        }
+
+        #puzzle-main-container {
+            border: 12px solid rgb(128, 0, 128);
+            border-radius: 25px;
+            transition: all 0.5s ease;
+            box-shadow: 0 0 20px rgba(128, 0, 128, 0.5);
+            padding: 5px;
+        }
+
+        audio {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="score-box timer-box" id="board-countdown">45</div>
+    <div id="score-container">
+        <div class="score-box red" id="score-red">0</div>
+        <div class="score-box yellow" id="score-yellow">0</div>
+        <div class="score-box blue" id="score-blue">0</div>
+    </div>
+    <div id="category-display">- CHƯA CÓ CHỦ ĐỀ -</div>
+    <div id="puzzle-main-container">
+        <div id="board"></div>
+    </div>
+
+    <audio id="globalSound" preload="auto"></audio>
+    <audio id="buzzerSound" src="buzzer.mp3" preload="auto"></audio>
+
+    <script>
+        var SUPABASE_URL = 'https://tfdgtdderkaergijhucb.supabase.co';
+        var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGd0ZGRlcmthZXJnaWpodWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NjM5MzksImV4cCI6MjA5NDAzOTkzOX0._BOLe4xH5ZuhfXfsdS63eY9N12wyomq58GG0toi1aIE';
+        var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentLayout = [];
+        let boardStateCache = {
+            puzzle_text: '',
+            category: '',
+            boardLayout: [],
+            revealedList: [],
+            markedPositions: [],
+            revealedPositions: []
+        };
+
+        // Các biến phục vụ đồng hồ đếm ngược
+        let localCountdownInterval = null;
+        let currentSeconds = 45;
+        let isTimerRunning = false;
+
+        // Quản lý âm thanh toàn cục
+        let audioContextUnlocked = false;
+        const globalAudio = document.getElementById('globalSound');
+        const buzzerAudio = document.getElementById('buzzerSound');
+
+        // Biến lưu vết tín hiệu âm thanh cũ để tránh chạy lặp lại lệnh cũ khi khởi tạo trang
+        let lastPlayedSignal = null;
+
+        // Hàm tương tác bất kỳ để kích hoạt quyền nghe toàn bộ âm thanh (Cách tiếp cận cô lập an toàn)
+        function unlockAudio() {
+            if (audioContextUnlocked) return;
+
+            // Sử dụng các đối tượng Audio phụ để xin quyền, không đụng vào thuộc tính .src của thẻ thật trên HTML
+            const unlock1 = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==");
+            const unlock2 = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==");
+
+            Promise.all([unlock1.play(), unlock2.play()])
+                .then(() => {
+                    audioContextUnlocked = true;
+                    console.log("Quyền phát âm thanh (Global & Buzzer) đã được mở khóa thành công!");
+                    // Gỡ bỏ sự kiện click này để không chạy lại vô ích
+                    document.removeEventListener('click', unlockAudio);
+                })
+                .catch(e => {
+                    console.log("Chờ tương tác hợp lệ từ người dùng để mở âm thanh...", e);
+                });
+        }
+        // Lắng nghe sự kiện click trên toàn bộ văn bản trang web
+        document.addEventListener('click', unlockAudio);
+
+        // Hàm thực hiện xử lý tín hiệu âm thanh đồng bộ từ Soundboard
+        function handleSoundSync(soundSignal) {
+            if (!soundSignal) return;
+
+            // Nếu trùng vết tín hiệu cũ đang lưu thì bỏ qua không xử lý
+            if (soundSignal === lastPlayedSignal) return;
+            lastPlayedSignal = soundSignal;
+
+            // Tách chuỗi lấy tên file thực tế (Ví dụ: "buzzer.mp3" hoặc "intro.mp3")
+            const soundFile = soundSignal.split('?')[0];
+
+            if (soundFile === 'STOP') {
+                globalAudio.pause();
+                globalAudio.currentTime = 0;
+                console.log("Đã dừng âm thanh theo lệnh từ Soundboard.");
+            }
+            // XỬ LÝ TIẾNG CHUÔNG NGƯỜI CHƠI BẤM: Phát độc lập qua buzzerAudio để không làm ngắt nhạc nền lớn
+            else if (soundFile === 'buzzer.mp3') {
+                console.log("Phát hiện có người chơi bấm chuông!");
+                buzzerAudio.currentTime = 0;
+                buzzerAudio.play().catch(err => {
+                    console.warn("Trình duyệt chặn chuông. Đảm bảo đã click một điểm trên Puzzleboard trước!", err);
+                });
+            }
+            // XỬ LÝ CÁC PHÁT ÂM THANH KHÁC TỪ SOUNDBOARD
+            else {
+                console.log("Tín hiệu hợp lệ! Bắt đầu nạp và phát file âm thanh từ Soundboard:", soundFile);
+
+                globalAudio.src = soundFile;
+                globalAudio.currentTime = 0;
+
+                const playPromise = globalAudio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(err => {
+                        console.warn("Trình duyệt từ chối phát nhạc. Đảm bảo đã click một điểm trên Puzzleboard trước!", err);
+                    });
+                }
+            }
+        }
+
+        function startLocalCountdown() {
+            clearInterval(localCountdownInterval);
+            localCountdownInterval = setInterval(() => {
+                if (currentSeconds > 0) {
+                    currentSeconds--;
+                    updateTimerUI(currentSeconds);
+                } else {
+                    clearInterval(localCountdownInterval);
+                    isTimerRunning = false;
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI(seconds) {
+            const timerBox = document.getElementById('board-countdown');
+            if (!timerBox) return;
+
+            timerBox.innerText = seconds;
+            timerBox.style.setProperty('background', '#ff00ff', 'important');
+            timerBox.style.setProperty('color', '#ffffff', 'important');
+        }
+
+        function handleTimerSync(dbTimer, dbTimerRunning) {
+            if (dbTimer === undefined || dbTimer === null) return;
+            const targetSec = parseInt(dbTimer, 10);
+            if (isNaN(targetSec)) return;
+
+            const targetRunning = (dbTimerRunning === true || dbTimerRunning === 'true' || dbTimerRunning === 1);
+
+            if (!targetRunning) {
+                clearInterval(localCountdownInterval);
+                localCountdownInterval = null;
+                isTimerRunning = false;
+                currentSeconds = targetSec;
+                updateTimerUI(currentSeconds);
+                return;
+            }
+
+            if (targetRunning) {
+                const isTimeMismatched = Math.abs(currentSeconds - targetSec) > 1;
+                const isNewRoundReset = (targetSec === 45 || targetSec === 30 || targetSec === 15 || targetSec === 10);
+
+                if (!isTimerRunning || isTimeMismatched || isNewRoundReset) {
+                    currentSeconds = targetSec;
+                    updateTimerUI(currentSeconds);
+                    isTimerRunning = true;
+                    if (currentSeconds > 0) {
+                        startLocalCountdown();
+                    }
+                }
+            }
+        }
+
+        function parseBoardLayout(val) {
+            if (val == null || val === '') return [];
+            if (Array.isArray(val)) return val;
+            if (typeof val === 'string') {
+                try {
+                    return JSON.parse(val);
+                } catch {
+                    return [];
+                }
+            }
+            return [];
+        }
+
+        function parsePosList(str) {
+            if (!str || typeof str !== 'string') return [];
+            return str.split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n) && n >= 1 && n <= 52);
+        }
+
+        function rcToPosition(r, c) {
+            if (r === 0) return (c >= 1 && c <= 12) ? c : null;
+            if (r === 1) return (c >= 0 && c <= 13) ? 13 + c : null;
+            if (r === 2) return (c >= 0 && c <= 13) ? 27 + c : null;
+            if (r === 3) return (c >= 1 && c <= 12) ? 40 + c : null;
+            return null;
+        }
+
+        function createBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            const config = [12, 14, 14, 12];
+
+            config.forEach((count, rIdx) => {
+                const row = document.createElement('div');
+                row.className = 'row';
+                for (let cIdx = 0; cIdx < count; cIdx++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    let actualColIndex = (rIdx === 0 || rIdx === 3) ? cIdx + 1 : cIdx;
+                    cell.id = `cell-${rIdx}-${actualColIndex}`;
+                    row.appendChild(cell);
+                }
+                board.appendChild(row);
+            });
+        }
+
+        function removeToneMarks(str) {
+            if (!str) return "";
+            return str.normalize("NFD").replace(/[\u0301\u0300\u0309\u0303\u0323]/g, "").normalize("NFC");
+        }
+
+        function updateBoard(puzzle, revealed, category, boardLayout = [], markedPositions = [], revealedPositions = [], isFullReveal = false) {
+            document.getElementById('category-display').innerText = category || "";
+            boardStateCache = {
+                puzzle_text: puzzle || '',
+                category: category || '',
+                boardLayout: Array.isArray(boardLayout) ? boardLayout : [],
+                revealedList: Array.isArray(revealed) ? revealed : [],
+                markedPositions: Array.isArray(markedPositions) ? markedPositions : [],
+                revealedPositions: Array.isArray(revealedPositions) ? revealedPositions : [],
+                isFullReveal: isFullReveal
+            };
+
+            const markedSet = new Set(boardStateCache.markedPositions);
+            const revealedPosSet = new Set(boardStateCache.revealedPositions);
+
+            document.querySelectorAll('.cell').forEach(c => {
+                c.className = 'cell';
+                c.innerText = '';
+                delete c.dataset.char;
+            });
+
+            const layout = boardStateCache.boardLayout;
+            if (!Array.isArray(layout)) return;
+
+            layout.forEach((rowChars, rIdx) => {
+                if (!Array.isArray(rowChars)) return;
+                rowChars.forEach((char, cIdx) => {
+                    const target = document.getElementById(`cell-${rIdx}-${cIdx}`);
+                    if (!target || !char || String(char).trim() === '') return;
+
+                    target.classList.add('active');
+                    target.dataset.char = char;
+
+                    const pos = rcToPosition(rIdx, cIdx);
+
+                    if (isFullReveal) {
+                        target.classList.add('revealed');
+                        target.innerText = char;
+                    }
+                    else if (pos !== null && revealedPosSet.has(pos)) {
+                        target.classList.add('revealed');
+                        target.innerText = removeToneMarks(char);
+                    }
+                    else if (pos !== null && markedSet.has(pos)) {
+                        target.classList.add('marked');
+                    }
+                    else {
+                        const cleanChar = removeToneMarks(char).toUpperCase();
+                        if (revealed.includes(cleanChar)) {
+                            target.classList.add('revealed');
+                            target.innerText = removeToneMarks(char);
+                        }
+                    }
+                });
+            });
+        }
+
+        async function fetchState() {
+            const { data, error } = await db.from('wheel_game').select('*').eq('id', 1).single();
+            if (error) {
+                console.error("Lỗi fetch:", error);
+                return;
+            }
+            if (data) {
+                handleTimerSync(data.timer, data.timer_running);
+
+                // Đồng bộ trạng thái tín hiệu âm thanh ban đầu từ database khi vừa mở trang lên
+                if (data.current_sound) {
+                    lastPlayedSignal = data.current_sound;
+                }
+
+                const modeScore = data.score_display_mode || 'round';
+                if (modeScore === 'total') {
+                    document.getElementById('score-red').innerText = (data.score_red_total || 0).toLocaleString('vi-VN');
+                    document.getElementById('score-yellow').innerText = (data.score_yellow_total || 0).toLocaleString('vi-VN');
+                    document.getElementById('score-blue').innerText = (data.score_blue_total || 0).toLocaleString('vi-VN');
+                } else {
+                    document.getElementById('score-red').innerText = (data.score_red_round || 0).toLocaleString('vi-VN');
+                    document.getElementById('score-yellow').innerText = (data.score_yellow_round || 0).toLocaleString('vi-VN');
+                    document.getElementById('score-blue').innerText = (data.score_blue_round || 0).toLocaleString('vi-VN');
+                }
+
+                if (data.border_color) {
+                    document.documentElement.style.setProperty('--border-color', data.border_color);
+                    document.getElementById('board').style.boxShadow = `0 0 60px ${data.border_color}`;
+                    document.getElementById('puzzle-main-container').style.borderColor = data.border_color;
+                    document.getElementById('puzzle-main-container').style.boxShadow = `0 0 20px ${data.border_color}`;
+                }
+
+                const puz = data.puzzle_text || "";
+                const cat = data.category || "";
+                const rev = data.revealed_list ? data.revealed_list.split(',') : [];
+                const lay = parseBoardLayout(data.board_layout);
+                const markedPos = parsePosList(data.marked_positions);
+                const revPos = parsePosList(data.revealed_positions);
+                const isFull = !!data.is_full_reveal;
+
+                updateBoard(puz, rev, cat, lay, markedPos, revPos, isFull);
+                applyLights(data);
+            }
+        }
+
+        window.onload = async () => {
+            createBoard();
+            await fetchState();
+
+            db.channel('puzzle_realtime')
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'wheel_game', filter: 'id=eq.1' }, payload => {
+                    const data = payload.new;
+
+                    // Theo dõi Realtime tín hiệu âm thanh mới từ Soundboard đổ về
+                    if ('current_sound' in data) {
+                        handleSoundSync(data.current_sound);
+                    }
+
+                    if ('timer' in data || 'timer_running' in data) {
+                        const nextTimer = 'timer' in data ? data.timer : currentSeconds;
+                        const nextRunning = 'timer_running' in data ? data.timer_running : isTimerRunning;
+                        handleTimerSync(nextTimer, nextRunning);
+                    }
+
+                    const modeScore = data.score_display_mode || 'round';
+                    if (modeScore === 'total') {
+                        document.getElementById('score-red').innerText = (data.score_red_total || 0).toLocaleString('vi-VN');
+                        document.getElementById('score-yellow').innerText = (data.score_yellow_total || 0).toLocaleString('vi-VN');
+                        document.getElementById('score-blue').innerText = (data.score_blue_total || 0).toLocaleString('vi-VN');
+                    } else {
+                        document.getElementById('score-red').innerText = (data.score_red_round || 0).toLocaleString('vi-VN');
+                        document.getElementById('score-yellow').innerText = (data.score_yellow_round || 0).toLocaleString('vi-VN');
+                        document.getElementById('score-blue').innerText = (data.score_blue_round || 0).toLocaleString('vi-VN');
+                    }
+
+                    if (data.border_color) {
+                        document.documentElement.style.setProperty('--border-color', data.border_color);
+                        document.getElementById('board').style.boxShadow = `0 0 60px ${data.border_color}`;
+                        document.getElementById('puzzle-main-container').style.borderColor = data.border_color;
+                        document.getElementById('puzzle-main-container').style.boxShadow = `0 0 20px ${data.border_color}`;
+                    }
+
+                    const puz = data.puzzle_text || "";
+                    const cat = data.category || "";
+                    const rev = data.revealed_list ? data.revealed_list.split(',') : [];
+                    const lay = parseBoardLayout(data.board_layout);
+                    const markedPos = parsePosList(data.marked_positions);
+                    const revPos = parsePosList(data.revealed_positions);
+                    const isFull = !!data.is_full_reveal;
+
+                    updateBoard(puz, rev, cat, lay, markedPos, revPos, isFull);
+                    applyLights(data);
+                })
+                .subscribe();
+        };
+
+        function applyLights(data) {
+            const lights = {
+                red: data.light_red || 'color',
+                yellow: data.light_yellow || 'color',
+                blue: data.light_blue || 'color'
+            };
+
+            const defaultStyles = {
+                red: { bg: '#ff0000', color: '#ffffff' },
+                yellow: { bg: '#ffff00', color: '#000000' },
+                blue: { bg: '#0000ff', color: '#ffffff' }
+            };
+
+            ['red', 'yellow', 'blue'].forEach(color => {
+                const elements = document.querySelectorAll(`.score-box.${color}`);
+
+                elements.forEach(el => {
+                    if (lights[color] === 'black') {
+                        el.style.setProperty('background', '#000000', 'important');
+                        el.style.setProperty('color', '#ffffff', 'important');
+                    } else if (lights[color] === 'white') {
+                        el.style.setProperty('background', '#ffffff', 'important');
+                        el.style.setProperty('color', '#000000', 'important');
+                    } else {
+                        el.style.setProperty('background', defaultStyles[color].bg, 'important');
+                        el.style.setProperty('color', defaultStyles[color].color, 'important');
+                    }
+                });
+            });
+        }
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.keyCode === 123) e.preventDefault();
+            if (e.ctrlKey && (e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.keyCode === 85)) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+
+</html>

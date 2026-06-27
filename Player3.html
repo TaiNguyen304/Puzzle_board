@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Player 3</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --neon-green: #39ff14;
+            --vibrant-pink: #ff00cc;
+            --deep-bg: #001a00;
+            --border-color: rgb(128, 0, 128);
+        }
+
+        /* Font-weight bold cho toàn bộ văn bản */
+        * {
+            font-weight: bold !important;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #120A21;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #main-layout {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* BÊN TRÁI CHIẾM 80% GIAO DIỆN */
+        #left-container {
+            width: 80%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            border-right: 3px solid #222;
+        }
+
+        /* BÊN PHẢI NGOÀI CÙNG CHIẾM 20% GIAO DIỆN */
+        #sidebar-right {
+            width: 20%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background-color: #00b366;
+            justify-content: flex-start;
+        }
+
+        #score-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 20px;
+        }
+
+        .score-box {
+            width: 220px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            border: 3px solid #fff;
+        }
+
+        .score-box.red {
+            background: #ff0000;
+            color: #fff;
+        }
+
+        .score-box.yellow {
+            background: #ffff00;
+            color: #000;
+        }
+
+        .score-box.blue {
+            background: #0000ff;
+            color: #fff;
+        }
+
+        #category-display {
+            color: yellow;
+            font-size: 3rem;
+            margin-bottom: 25px;
+            text-shadow: 0 0 15px rgba(255, 255, 0, 0.8);
+            text-transform: uppercase;
+            user-select: none;
+        }
+
+        #board {
+            display: grid;
+            grid-template-rows: repeat(4, 1fr);
+            gap: 6px;
+            background: var(--deep-bg);
+            padding: 30px;
+            box-shadow: 0 0 60px rgb(128, 0, 128);
+            transition: all 0.5s ease;
+            border-radius: 20px;
+            position: relative;
+        }
+
+        #board::after {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            right: -6px;
+            bottom: -6px;
+            border: 3px solid var(--border-color);
+            border-radius: 24px;
+            pointer-events: none;
+        }
+
+        .row {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            width: fit-content;
+            margin: 0 auto;
+            user-select: none;
+        }
+
+        @font-face {
+            font-family: 'Helvetica-Bold';
+            src: url('Helvetica-Bold.ttf') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        .cell {
+            width: 80px;
+            height: 110px;
+            font-size: 70px;
+            box-sizing: border-box;
+
+            /* TRẢ VỀ NGUYÊN BẢN: Tuyệt đối không thêm border làm thay đổi kích thước hay lộ viền đen */
+            border: none;
+            border-radius: 5px;
+            /* Trả về border-radius nguyên bản của bạn */
+
+            background-image: url("Ô chữ.png");
+            background-size: 110% 110%;
+            /* Trả về tỷ lệ hiển thị đẹp nhất của ảnh */
+            background-position: center;
+            background-repeat: no-repeat;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            color: transparent;
+            user-select: none;
+
+            transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        /* --- CÁC TRẠNG THÁI THAY ĐỔI: Dùng hiệu ứng đổ bóng vào trong để giả lập viền --- */
+
+        .cell.active {
+            background-image: none;
+            background-color: white;
+            /* Tạo viền đen 3px sắc nét chạy dọc viền trong của ô, giữ nguyên kích thước 80x110px */
+            box-shadow: inset 0 0 0 3px #000;
+            border-radius: 8px;
+            /* Tăng nhẹ độ bo góc riêng cho ô màu để khớp với form ảnh cũ */
+        }
+
+        .cell.revealed {
+            background-image: none;
+            background-color: white;
+            box-shadow: inset 0 0 0 3px #000;
+            /* Viền trong 3px sắc nét */
+            border-radius: 8px;
+            color: #000;
+            font-weight: bold;
+            font-family: 'Helvetica-Bold', sans-serif;
+        }
+
+        .cell.marked {
+            background-image: none;
+            background-color: blue;
+            box-shadow: inset 0 0 0 3px #000;
+            /* Viền trong 3px sắc nét */
+            border-radius: 8px;
+            color: transparent;
+        }
+
+        #puzzle-main-container {
+            border: 12px solid rgb(128, 0, 128);
+            border-radius: 25px;
+            transition: all 0.5s ease;
+            box-shadow: 0 0 20px rgba(128, 0, 128, 0.5);
+            padding: 5px;
+        }
+
+        /* STYLES CHO SIDEBAR BÊN PHẢI */
+        #sidebar-scores {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-score-box {
+            height: 65px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            border: 3px solid #fff;
+            background: purple;
+            color: #fff;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-score-box.buzzed-red {
+            background: #ff0000 !important;
+            color: #fff !important;
+        }
+
+        .sidebar-score-box.buzzed-yellow {
+            background: #ffff00 !important;
+            color: #000 !important;
+        }
+
+        .sidebar-score-box.buzzed-blue {
+            background: #0000ff !important;
+            color: #fff !important;
+        }
+
+        #buzzer-btn {
+            flex: 1;
+            width: 100%;
+            border-radius: 15px;
+            font-size: 2.5rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            border: none;
+            outline: none;
+        }
+
+        /* Nút chuông khi khóa */
+        #buzzer-btn.locked {
+            background: #000;
+            color: #fff;
+            border: 3px solid #333;
+            cursor: not-allowed;
+        }
+
+        /* Nút chuông khi mở */
+        #buzzer-btn.open {
+            background: #fff;
+            color: #000;
+            border: 3px solid #fff;
+        }
+
+        #buzzer-btn.open:hover {
+            background: orange;
+            color: #fff;
+            border-color: orange;
+        }
+
+        .timer-display {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 70px;
+            height: 70px;
+            background: #ff00cc;
+            color: #fff;
+            font-size: 2rem;
+            border-radius: 10px;
+            font-weight: 900;
+            box-shadow: 0 0 15px rgba(255, 0, 204, 0.6);
+            margin-bottom: 15px;
+            border: 3px solid #fff;
+        }
+
+        audio {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main-layout">
+        <!-- BÊN TRÁI: CHIẾM 80% GIAO DIỆN -->
+        <div id="left-container">
+            <div id="score-container">
+                <div class="score-box red" id="score-red">0</div>
+                <div class="score-box yellow" id="score-yellow">0</div>
+                <div class="score-box blue" id="score-blue">0</div>
+            </div>
+            <div id="category-display">- CHƯA CÓ CHỦ ĐỀ -</div>
+            <div id="puzzle-main-container">
+                <div id="board"></div>
+            </div>
+        </div>
+
+        <!-- BÊN PHẢI NGOÀI CÙNG: CHIẾM 20% GIAO DIỆN -->
+        <div id="sidebar-right">
+            <div class="timer-display" id="player1-timer">45</div>
+            <div id="sidebar-scores">
+                <div class="sidebar-score-box" id="side-score-1">P1: 0</div>
+                <div class="sidebar-score-box" id="side-score-2">P2: 0</div>
+                <div class="sidebar-score-box" id="side-score-3">P3: 0</div>
+            </div>
+            <button id="buzzer-btn" class="locked" disabled>CHUÔNG</button>
+        </div>
+    </div>
+
+    <audio id="buzzerSound" src="buzzer.mp3" preload="auto"></audio>
+    <audio id="globalSound" preload="auto"></audio>
+    <script>
+        var PLAYER_ID = 3; // Xác định danh tính người chơi công khai
+
+        var SUPABASE_URL = 'https://tfdgtdderkaergijhucb.supabase.co';
+        var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGd0ZGRlcmthZXJnaWpodWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NjM5MzksImV4cCI6MjA5NDAzOTkzOX0._BOLe4xH5ZuhfXfsdS63eY9N12wyomq58GG0toi1aIE';
+        var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Biến trạng thái âm thanh toàn cục
+        let audioContextUnlocked = false;
+        const globalAudio = document.getElementById('globalSound');
+        const buzzerAudio = document.getElementById('buzzerSound');
+        let lastPlayedSignal = null;
+
+        // Mở khóa bản quyền âm thanh trình duyệt khi người dùng tương tác click vào màn hình
+        function unlockAudio() {
+            if (audioContextUnlocked) return;
+            const unlock1 = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==");
+            const unlock2 = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==");
+            Promise.all([unlock1.play(), unlock2.play()]).then(() => {
+                audioContextUnlocked = true;
+                console.log("Quyền phát âm thanh đã được kích hoạt thành công!");
+                document.removeEventListener('click', unlockAudio);
+            }).catch(e => console.log("Chờ người dùng tương tác để mở cổng âm thanh...", e));
+        }
+        document.addEventListener('click', unlockAudio);
+
+        // Hàm nhận xử lý tín hiệu âm thanh trực tiếp từ Supabase Realtime
+        function handleSoundSync(soundSignal) {
+            if (!soundSignal) return;
+            if (soundSignal === lastPlayedSignal) return;
+            lastPlayedSignal = soundSignal;
+
+            const soundFile = soundSignal.split('?')[0];
+
+            if (soundFile === 'STOP') {
+                globalAudio.pause();
+                globalAudio.currentTime = 0;
+            } else if (soundFile === 'buzzer.mp3') {
+                buzzerAudio.currentTime = 0;
+                buzzerAudio.play().catch(err => console.warn("Trình duyệt chặn tiếng chuông bấm.", err));
+            } else {
+                console.log("Đang phát file âm thanh đồng bộ:", soundFile);
+                globalAudio.src = soundFile;
+                globalAudio.currentTime = 0;
+                globalAudio.play().catch(err => console.warn("Trình duyệt chặn phát nhạc tự động.", err));
+            }
+        }
+
+        let currentLayout = [];
+        let boardStateCache = {
+            puzzle_text: '',
+            category: '',
+            boardLayout: [],
+            revealedList: [],
+            markedPositions: [],
+            revealedPositions: []
+        };
+
+        function parseBoardLayout(val) {
+            if (val == null || val === '') return [];
+            if (Array.isArray(val)) return val;
+            if (typeof val === 'string') {
+                try {
+                    return JSON.parse(val);
+                } catch {
+                    return [];
+                }
+            }
+            return [];
+        }
+
+        function parsePosList(str) {
+            if (!str || typeof str !== 'string') return [];
+            return str.split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n) && n >= 1 && n <= 52);
+        }
+
+        function rcToPosition(r, c) {
+            if (r === 0) return (c >= 1 && c <= 12) ? c : null;
+            if (r === 1) return (c >= 0 && c <= 13) ? 13 + c : null;
+            if (r === 2) return (c >= 0 && c <= 13) ? 27 + c : null;
+            if (r === 3) return (c >= 1 && c <= 12) ? 40 + c : null;
+            return null;
+        }
+
+        function createBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            const config = [12, 14, 14, 12];
+
+            config.forEach((count, rIdx) => {
+                const row = document.createElement('div');
+                row.className = 'row';
+                for (let cIdx = 0; cIdx < count; cIdx++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    let actualColIndex = (rIdx === 0 || rIdx === 3) ? cIdx + 1 : cIdx;
+                    cell.id = `cell-${rIdx}-${actualColIndex}`;
+                    row.appendChild(cell);
+                }
+                board.appendChild(row);
+            });
+        }
+
+        function removeToneMarks(str) {
+            if (!str) return "";
+            return str.normalize("NFD").replace(/[̣́̀̉̃]/g, "").normalize("NFC");
+        }
+
+        function updateBoard(puzzle, revealed, category, boardLayout = [], markedPositions = [], revealedPositions = [], isFullReveal = false) {
+            document.getElementById('category-display').innerText = category || "";
+
+            boardStateCache = {
+                puzzle_text: puzzle || '',
+                category: category || '',
+                boardLayout: Array.isArray(boardLayout) ? boardLayout : [],
+                revealedList: Array.isArray(revealed) ? revealed : [],
+                markedPositions: Array.isArray(markedPositions) ? markedPositions : [],
+                revealedPositions: Array.isArray(revealedPositions) ? revealedPositions : [],
+                isFullReveal: isFullReveal
+            };
+
+            const markedSet = new Set(boardStateCache.markedPositions);
+            const revealedPosSet = new Set(boardStateCache.revealedPositions);
+
+            document.querySelectorAll('.cell').forEach(c => {
+                c.className = 'cell';
+                c.innerText = '';
+                delete c.dataset.char;
+            });
+
+            const layout = boardStateCache.boardLayout;
+            if (!Array.isArray(layout)) return;
+
+            layout.forEach((rowChars, rIdx) => {
+                if (!Array.isArray(rowChars)) return;
+
+                rowChars.forEach((char, cIdx) => {
+                    const target = document.getElementById(`cell-${rIdx}-${cIdx}`);
+                    if (!target || !char || String(char).trim() === "") return;
+
+                    target.classList.add('active');
+                    const ch = String(char).trim().toUpperCase();
+                    target.dataset.char = ch;
+
+                    const pos = rcToPosition(rIdx, cIdx);
+                    const revealedByPos = pos != null && revealedPosSet.has(pos);
+
+                    if (revealedByPos || isFullReveal) {
+                        if (isFullReveal) {
+                            target.innerText = ch;
+                        } else {
+                            target.innerText = removeToneMarks(ch);
+                        }
+                        target.classList.add('revealed');
+
+                        if (pos != null && markedSet.has(pos)) {
+                            target.classList.add('marked');
+                        }
+                    }
+                    else if (pos != null && markedSet.has(pos)) {
+                        target.classList.add('marked');
+                    }
+                });
+            });
+        }
+
+        function formatScore(num) {
+            return (num || 0).toLocaleString('vi-VN');
+        }
+
+        const updateScores = (data) => {
+            const mode = data.score_display_mode || 'round';
+            const format = (num) => (num || 0).toLocaleString('vi-VN');
+
+            const redEl = document.getElementById('score-red');
+            const yellowEl = document.getElementById('score-yellow');
+            const blueEl = document.getElementById('score-blue');
+
+            if (redEl) redEl.innerText = format(data[`score_red_${mode}`]);
+            if (yellowEl) yellowEl.innerText = format(data[`score_yellow_${mode}`]);
+            if (blueEl) blueEl.innerText = format(data[`score_blue_${mode}`]);
+
+            // Cập nhật điểm sidebar góc bên phải ngoài cùng
+            const side1 = document.getElementById('side-score-1');
+            const side2 = document.getElementById('side-score-2');
+            const side3 = document.getElementById('side-score-3');
+
+            if (side1) side1.innerText = `P1: ${format(data[`score_red_${mode}`])}`;
+            if (side2) side2.innerText = `P2: ${format(data[`score_yellow_${mode}`])}`;
+            if (side3) side3.innerText = `P3: ${format(data[`score_blue_${mode}`])}`;
+        };
+
+        const updateBuzzerUI = (data) => {
+            const buzzedPlayer = data.buzzer_player;
+            const isLocked = data.is_buzzer_locked || false;
+            const PLAYER_ID = 1;
+            const buzzerBtn = document.getElementById('buzzer-btn');
+            const side1 = document.getElementById('side-score-1');
+            const side2 = document.getElementById('side-score-2');
+            const side3 = document.getElementById('side-score-3');
+
+            // 1. Luôn luôn xóa class màu trước để reset về tím
+            [side1, side2, side3].forEach(el => {
+                if (el) el.classList.remove('buzzed-red', 'buzzed-yellow', 'buzzed-blue');
+            });
+
+            if (buzzedPlayer) {
+                // 2. Cập nhật trạng thái nút bấm
+                if (buzzerBtn) {
+                    buzzerBtn.className = 'locked';
+                    buzzerBtn.disabled = true;
+                    buzzerBtn.innerText = (buzzedPlayer == PLAYER_ID) ? 'BẠN ĐÃ BẤM!' : `P${buzzedPlayer} ĐÃ BẤM`;
+                }
+
+                // 3. Kích hoạt màu dựa trên giá trị buzzedPlayer (so sánh tương đối ==)
+                if (buzzedPlayer == 1 && side1) side1.classList.add('buzzed-red');
+                if (buzzedPlayer == 2 && side2) side2.classList.add('buzzed-yellow');
+                if (buzzedPlayer == 3 && side3) side3.classList.add('buzzed-blue');
+
+            } else {
+                // 4. Khi buzzer_player là null (reset chuông)
+                if (buzzerBtn) {
+                    buzzerBtn.className = isLocked ? 'locked' : 'open';
+                    buzzerBtn.disabled = isLocked;
+                    buzzerBtn.innerText = isLocked ? 'ĐANG KHÓA' : 'BẤM CHUÔNG';
+                }
+            }
+        };
+
+        async function pressBuzzer() {
+            const buzzerBtn = document.getElementById('buzzer-btn');
+            if (!buzzerBtn || buzzerBtn.classList.contains('locked') || buzzerBtn.disabled) return;
+
+            let pColor = '#ff0000'; // Đỏ cho Player 1
+            if (PLAYER_ID === 2) pColor = '#ffff00'; // Vàng cho Player 2
+            if (PLAYER_ID === 3) pColor = '#0000ff'; // Xanh dương cho Player 3
+
+            // Gửi yêu cầu cập nhật chuông chống tranh chấp (Chỉ cập nhật nếu buzzer_player là null)
+            const { data, error } = await db.from('wheel_game')
+                .update({
+                    buzzer_player: PLAYER_ID, // Ví dụ: 'red'
+                    border_color: pColor      // Màu viền tương ứng
+                })
+                .eq('id', 1)
+                // Chấp nhận bấm nếu buzzer_player đang trống (NULL hoặc "")
+                .or('buzzer_player.is.null,buzzer_player.eq.""')
+                .select();
+
+            if (error) {
+                console.error("Lỗi khi bấm chuông:", error);
+            } else if (data && data.length > 0) {
+                console.log("Bạn đã bấm chuông!");
+                // [BỔ SUNG] Gửi tín hiệu âm thanh buzzer kèm timestamp để Puzzleboard nhận diện phát theo thời gian thực
+                const uniqueBuzzerSignal = 'buzzer.mp3?' + Date.now();
+                await db.from('wheel_game')
+                    .update({ current_sound: uniqueBuzzerSignal })
+                    .eq('id', 1);
+            }
+        }
+
+        function applyBorderColor(color) {
+            const container = document.getElementById('puzzle-main-container');
+            const board = document.getElementById('board');
+
+            if (container) {
+                container.style.border = `12px solid ${color}`;
+                container.style.boxShadow = `0 0 40px ${color}`;
+            }
+
+            document.documentElement.style.setProperty('--border-color', color);
+
+            if (board) {
+                board.style.boxShadow = `0 0 60px ${color}`;
+            }
+        }
+
+        async function init() {
+            createBoard();
+
+            // Lấy dữ liệu ban đầu khi vừa load trang
+            const { data } = await db.from('wheel_game').select('*').eq('id', 1).maybeSingle();
+            if (data) {
+                const revealed = data.revealed_chars ? data.revealed_chars.split(',').map(s => s.trim()).filter(Boolean) : [];
+                const layoutData = parseBoardLayout(data.board_layout);
+                const markedPositions = parsePosList(data.marked_positions);
+                const revealedPositions = parsePosList(data.revealed_positions);
+                const isFull = data.is_full_reveal || false;
+
+                updateBoard(
+                    data.puzzle_text,
+                    revealed,
+                    data.category,
+                    layoutData,
+                    markedPositions,
+                    revealedPositions,
+                    isFull
+                );
+
+                if (data.border_color) {
+                    applyBorderColor(data.border_color);
+                }
+
+                updateScores(data);
+                applyLightStyles(data); // Đã có lúc load trang ban đầu
+                if ('buzzer_player' in data) lastBuzzerState = data.buzzer_player;
+                updateBuzzerUI(data);
+
+                // Update timer display on initial load
+                if ('timer' in data) {
+                    const timerDisplay = document.getElementById('player1-timer');
+                    if (timerDisplay) {
+                        timerDisplay.innerText = data.timer || '0';
+                    }
+                }
+            }
+
+            // Lắng nghe thay đổi thời gian thực từ Supabase
+            db.channel('any').on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'wheel_game'
+            }, payload => {
+                const newData = payload.new;
+
+                if ('current_sound' in newData) {
+                    handleSoundSync(newData.current_sound);
+                }
+                if ('buzzer_player' in newData) {
+                    const bp = newData.buzzer_player;
+                    const n = (bp === null || bp === undefined || bp === '') ? null : Number(bp);
+                    const prev = (lastBuzzerState === null || lastBuzzerState === undefined || lastBuzzerState === '')
+                        ? null
+                        : Number(lastBuzzerState);
+                    if (n != null && !isNaN(n) && [1, 2, 3].includes(n) && n !== prev) {
+                        playBuzzer();
+                    }
+                    lastBuzzerState = bp;
+                }
+
+                const isFull = newData.is_full_reveal !== undefined
+                    ? newData.is_full_reveal
+                    : (boardStateCache.isFullReveal || false);
+
+                if (newData.puzzle_text !== undefined || newData.board_layout !== undefined
+                    || newData.revealed_chars !== undefined || newData.marked_positions !== undefined
+                    || newData.revealed_positions !== undefined || newData.category !== undefined
+                    || newData.is_full_reveal !== undefined) {
+
+                    const puzzle = newData.puzzle_text !== undefined ? (newData.puzzle_text || "") : boardStateCache.puzzle_text;
+
+                    const revealed = newData.revealed_chars !== undefined
+                        ? (newData.revealed_chars ? newData.revealed_chars.split(',').map(s => s.trim()).filter(Boolean) : [])
+                        : boardStateCache.revealedList;
+
+                    const cat = newData.category !== undefined ? (newData.category || "") : boardStateCache.category;
+
+                    const layoutData = newData.board_layout !== undefined
+                        ? parseBoardLayout(newData.board_layout)
+                        : boardStateCache.boardLayout;
+
+                    const markedPositions = newData.marked_positions !== undefined
+                        ? parsePosList(newData.marked_positions)
+                        : boardStateCache.markedPositions;
+
+                    const revealedPositions = newData.revealed_positions !== undefined
+                        ? parsePosList(newData.revealed_positions)
+                        : boardStateCache.revealedPositions;
+
+                    updateBoard(
+                        puzzle,
+                        revealed,
+                        cat,
+                        layoutData,
+                        markedPositions,
+                        revealedPositions,
+                        isFull
+                    );
+                }
+
+                if (newData.border_color) {
+                    applyBorderColor(newData.border_color);
+                }
+
+                updateScores(newData);
+                updateBuzzerUI(newData);
+
+                // --- THÊM DÒNG NÀY ĐỂ CẬP NHẬT ĐÈN THỜI GIAN THỰC ---
+                applyLightStyles(newData);
+
+                // Update timer display
+                if (newData.timer !== undefined) {
+                    const timerDisplay = document.getElementById('player1-timer');
+                    if (timerDisplay) {
+                        timerDisplay.innerText = newData.timer || '0';
+                    }
+                }
+
+            }).subscribe();
+
+            // Poll timer every second to ensure synchronization
+            setInterval(async () => {
+                try {
+                    const { data } = await db.from('wheel_game').select('timer').eq('id', 1).maybeSingle();
+                    if (data) {
+                        const timerDisplay = document.getElementById('player1-timer');
+                        if (timerDisplay) {
+                            timerDisplay.innerText = String(data.timer || '0');
+                        }
+                    }
+                } catch (e) {
+                    console.error('Timer poll error:', e);
+                }
+            }, 500);
+        }
+
+        createBoard();
+        init();
+
+        let lastBuzzerState = 0;
+
+        function playBuzzer() {
+            const sound = document.getElementById('buzzerSound');
+            if (sound) {
+                sound.currentTime = 0;
+                sound.play().catch(e => console.log("Yêu cầu tương tác để phát nhạc:", e));
+            }
+        }
+
+        function applyLightStyles(data) {
+            const lights = {
+                red: data.light_red || 'color',
+                yellow: data.light_yellow || 'color',
+                blue: data.light_blue || 'color'
+            };
+
+            // Định nghĩa màu chữ và màu nền nguyên bản cho trạng thái 'color'
+            const defaultStyles = {
+                red: { bg: '#ff0000', color: '#ffffff' },
+                yellow: { bg: '#ffff00', color: '#000000' },
+                blue: { bg: '#0000ff', color: '#ffffff' }
+            };
+
+            ['red', 'yellow', 'blue'].forEach(color => {
+                // Tìm tất cả các phần tử chứa hộp điểm của người chơi tương ứng (.score-box.red, v.v...)
+                const elements = document.querySelectorAll(`.score-box.${color}`);
+
+                elements.forEach(el => {
+                    if (lights[color] === 'black') {
+                        el.style.setProperty('background', '#000000', 'important');
+                        el.style.setProperty('color', '#ffffff', 'important');
+                    } else if (lights[color] === 'white') {
+                        el.style.setProperty('background', '#ffffff', 'important');
+                        el.style.setProperty('color', '#000000', 'important');
+                    } else {
+                        // Trả về trạng thái màu nguyên bản ban đầu
+                        el.style.setProperty('background', defaultStyles[color].bg, 'important');
+                        el.style.setProperty('color', defaultStyles[color].color, 'important');
+                    }
+                });
+            });
+        }
+
+        // Gán sự kiện click nút chuông
+        document.getElementById('buzzer-btn').addEventListener('click', pressBuzzer);
+
+        // Hỗ trợ bấm nút Enter để giành quyền bấm chuông nhanh
+        document.addEventListener('keydown', e => {
+            if (e.code === 'Enter') {
+                const buzzerBtn = document.getElementById('buzzer-btn');
+                if (buzzerBtn && !buzzerBtn.disabled && buzzerBtn.classList.contains('open')) {
+                    e.preventDefault();
+                    pressBuzzer();
+                }
+            }
+            if (e.keyCode === 123) e.preventDefault();
+            if (e.ctrlKey && (e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.keyCode === 85)) {
+                e.preventDefault();
+            }
+        });
+        document.addEventListener('contextmenu', e => e.preventDefault());
+    </script>
+</body>
+
+</html>
