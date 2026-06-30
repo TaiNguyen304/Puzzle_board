@@ -158,6 +158,16 @@
             color: transparent;
         }
 
+        .cell.decoding {
+            background-image: url("Giải mã.png");
+            background-size: 110% 110%;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: #ffcc00;
+            box-shadow: inset 0 0 0 2px #000;
+            color: transparent;
+        }
+
         /* --- CỘT PHẢI: BẢNG ĐIỂM KÉP & THÔNG TIN --- */
         .right-col {
             display: flex;
@@ -480,6 +490,7 @@
             pending_positions: [],
             marked_positions: [],
             revealed_positions: [],
+            decoding_positions: [],
             is_full_reveal: false,
             border_color: 'rgb(128, 0, 128)',
             score_red_round: 0, score_red_total: 0,
@@ -720,11 +731,18 @@
 
             if (newData.revealed_chars !== undefined) {
                 boardStateCache.revealed_chars = newData.revealed_chars ? newData.revealed_chars.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+                // GỌI HÀM CẬP NHẬT GIAO DIỆN BÀN PHÍM HOST NGAY LẬP TỨC
+                renderKeyboardStatus(boardStateCache.revealed_chars);
             }
 
             if (newData.pending_positions !== undefined) boardStateCache.pending_positions = parsePosList(newData.pending_positions);
             if (newData.marked_positions !== undefined) boardStateCache.marked_positions = parsePosList(newData.marked_positions);
             if (newData.revealed_positions !== undefined) boardStateCache.revealed_positions = parsePosList(newData.revealed_positions);
+
+            // --- THÊM LOGIC ĐỒNG BỘ Ô GIẢI MÃ ---
+            if (newData.decoding_positions !== undefined) boardStateCache.decoding_positions = parsePosList(newData.decoding_positions);
+
             if (newData.is_full_reveal !== undefined) boardStateCache.is_full_reveal = newData.is_full_reveal;
             if (newData.border_color !== undefined) boardStateCache.border_color = newData.border_color;
 
@@ -790,28 +808,53 @@
             // --- 6. KẾT XUẤT PUZZLEBOARD LIVE ---
             const markedSet = new Set(markedList);
             const revealedPosSet = new Set(boardStateCache.revealed_positions);
+            const decodingSet = new Set(boardStateCache.decoding_positions); // Tập hợp ô giải mã từ Database
 
             document.querySelectorAll('.cell').forEach(c => {
                 c.className = 'cell';
                 c.innerText = '';
+                c.style.backgroundImage = ''; // Reset ảnh nền giải mã
             });
 
             if (Array.isArray(boardStateCache.board_layout)) {
                 boardStateCache.board_layout.forEach((rowChars, rIdx) => {
                     if (!Array.isArray(rowChars)) return;
-                    rowChars.forEach((char, cIdx) => {
+                    rowChars.forEach((cellData, cIdx) => {
                         const target = document.getElementById(`cell-${rIdx}-${cIdx}`);
-                        if (!target || !char || String(char).trim() === "") return;
+                        if (!target) return;
 
-                        target.classList.add('active');
+                        // Xử lý dữ liệu ô chữ nếu ô chứa dạng Object {char: 'A'} hoặc chuỗi thường 'A'
+                        let char = (cellData && typeof cellData === 'object') ? cellData.char : cellData;
+                        const isDecoding = (cellData && typeof cellData === 'object') ? !!cellData.isDecoding : false;
+                        if (!char || String(char).trim() === "") return;
+
                         const ch = String(char).trim().toUpperCase();
                         const pos = rcToPosition(rIdx, cIdx);
+                        const isDecodingCell = (pos != null && (decodingSet.has(pos) || isDecoding));
 
-                        if (boardStateCache.is_full_reveal || (pos != null && revealedPosSet.has(pos))) {
-                            target.innerText = boardStateCache.is_full_reveal ? ch : removeToneMarks(ch);
-                            target.classList.add('revealed');
-                        } else if (pos != null && markedSet.has(pos)) {
-                            target.classList.add('marked');
+                        if (isDecodingCell) {
+                            if (revealedPosSet.has(pos)) {
+                                target.classList.add('active', 'revealed');
+                                target.innerText = removeToneMarks(ch);
+                                target.style.backgroundImage = 'none';
+                                target.style.backgroundColor = 'white';
+                            } else {
+                                target.className = 'cell decoding';
+                                target.innerText = '';
+                                target.style.backgroundImage = 'url("Giải mã.png")';
+                                target.style.backgroundSize = '110% 110%';
+                                target.style.backgroundPosition = 'center';
+                                target.style.backgroundRepeat = 'no-repeat';
+                                target.style.backgroundColor = '#ffcc00';
+                            }
+                        } else {
+                            target.classList.add('active');
+                            if (boardStateCache.is_full_reveal || (pos != null && revealedPosSet.has(pos))) {
+                                target.innerText = boardStateCache.is_full_reveal ? ch : removeToneMarks(ch);
+                                target.classList.add('revealed');
+                            } else if (pos != null && markedSet.has(pos)) {
+                                target.classList.add('marked');
+                            }
                         }
                     });
                 });

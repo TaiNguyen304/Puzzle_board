@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
-
+ 
 <head>
     <meta charset="UTF-8">
     <title>Player 1</title>
@@ -197,6 +197,16 @@
             box-shadow: inset 0 0 0 3px #000;
             /* Viền trong 3px sắc nét */
             border-radius: 8px;
+            color: transparent;
+        }
+
+        .cell.decoding {
+            background-image: url("Giải mã.png");
+            background-size: 110% 110%;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: #ffcc00;
+            box-shadow: inset 0 0 0 2px #000;
             color: transparent;
         }
 
@@ -438,9 +448,8 @@
             return str.normalize("NFD").replace(/[̣́̀̉̃]/g, "").normalize("NFC");
         }
 
-        function updateBoard(puzzle, revealed, category, boardLayout = [], markedPositions = [], revealedPositions = [], isFullReveal = false) {
+        function updateBoard(puzzle, revealed, category, boardLayout = [], markedPositions = [], revealedPositions = [], isFullReveal = false, decodingPositions = []) {
             document.getElementById('category-display').innerText = category || "";
-
             boardStateCache = {
                 puzzle_text: puzzle || '',
                 category: category || '',
@@ -448,15 +457,31 @@
                 revealedList: Array.isArray(revealed) ? revealed : [],
                 markedPositions: Array.isArray(markedPositions) ? markedPositions : [],
                 revealedPositions: Array.isArray(revealedPositions) ? revealedPositions : [],
+                decodingPositions: Array.isArray(decodingPositions) ? decodingPositions : [],
                 isFullReveal: isFullReveal
             };
 
             const markedSet = new Set(boardStateCache.markedPositions);
             const revealedPosSet = new Set(boardStateCache.revealedPositions);
+            const decodingSet = new Set(boardStateCache.decodingPositions);
 
+            const showDecodingCell = (target) => {
+                target.classList.remove('active', 'revealed', 'marked');
+                target.classList.add('decoding');
+                target.innerText = '';
+                target.style.backgroundImage = 'url("Giải mã.png")';
+                target.style.backgroundSize = '110% 110%';
+                target.style.backgroundPosition = 'center';
+                target.style.backgroundRepeat = 'no-repeat';
+                target.style.backgroundColor = '#ffcc00';
+            };
+
+            // Reset lại toàn bộ ô chữ về trạng thái ẩn ban đầu
             document.querySelectorAll('.cell').forEach(c => {
                 c.className = 'cell';
                 c.innerText = '';
+                c.style.backgroundImage = '';
+                c.style.backgroundColor = '';
                 delete c.dataset.char;
             });
 
@@ -465,32 +490,67 @@
 
             layout.forEach((rowChars, rIdx) => {
                 if (!Array.isArray(rowChars)) return;
-
-                rowChars.forEach((char, cIdx) => {
+                rowChars.forEach((cellData, cIdx) => {
                     const target = document.getElementById(`cell-${rIdx}-${cIdx}`);
-                    if (!target || !char || String(char).trim() === "") return;
+                    if (!target) return;
 
-                    target.classList.add('active');
-                    const ch = String(char).trim().toUpperCase();
-                    target.dataset.char = ch;
+                    // Tách dữ liệu từ Object hoặc Chuỗi thuần túy
+                    let char = "";
+                    let isDecoding = false;
+
+                    if (cellData && typeof cellData === 'object') {
+                        char = cellData.char;
+                        isDecoding = !!cellData.isDecoding;
+                    } else {
+                        char = cellData;
+                    }
+
+                    if (!char || String(char).trim() === '') return;
 
                     const pos = rcToPosition(rIdx, cIdx);
-                    const revealedByPos = pos != null && revealedPosSet.has(pos);
+                    const isDecodingCell = isDecoding || (pos !== null && decodingSet.has(pos));
 
-                    if (revealedByPos || isFullReveal) {
-                        if (isFullReveal) {
-                            target.innerText = ch;
-                        } else {
-                            target.innerText = removeToneMarks(ch);
-                        }
+                    target.classList.add('active');
+                    target.dataset.char = char;
+
+                    // --- ĐOẠN ĐÃ SỬA: XỬ LÝ PHÂN LOẠI ĐIỀU KIỆN THEO CƠ CHẾ CHUẨN ---
+
+                    // 1. Nếu là Ô GIẢI MÃ và đã được bấm nút kích hoạt mở công khai
+                    if (isDecodingCell && pos !== null && revealedPosSet.has(pos)) {
                         target.classList.add('revealed');
-
-                        if (pos != null && markedSet.has(pos)) {
-                            target.classList.add('marked');
-                        }
+                        target.innerText = removeToneMarks(char);
+                        target.style.backgroundImage = 'none';
+                        target.style.backgroundColor = 'white';
                     }
-                    else if (pos != null && markedSet.has(pos)) {
+                    // 2. Nếu là Ô GIẢI MÃ nhưng chưa được lật (Giữ ẩn tuyệt đối kể cả khi bật Hiện toàn bộ)
+                    else if (isDecodingCell) {
+                        showDecodingCell(target);
+                    }
+                    // 3. ƯU TIÊN LÊN TRÊN: Nếu đang bật nút HIỆN TOÀN BỘ Ô CHỮ (Hiện chữ nguyên bản gốc, giữ nguyên các dấu hỏi, ngã, nặng...)
+                    else if (isFullReveal) {
+                        target.classList.add('revealed');
+                        target.innerText = char; // Đảm bảo hiện chữ gốc có dấu chuẩn xác ở ngay lần bấm đầu tiên
+                        target.style.backgroundImage = 'none';
+                        target.style.backgroundColor = 'white';
+                    }
+                    // 4. Nếu là ô thường và đã được lật mở theo tọa độ vị trí cụ thể từ Controller
+                    else if (pos !== null && revealedPosSet.has(pos)) {
+                        target.classList.add('revealed');
+                        target.innerText = removeToneMarks(char);
+                        target.style.backgroundImage = 'none';
+                        target.style.backgroundColor = 'white';
+                    }
+                    // 5. Nếu ô chữ đang được bôi màu đánh dấu (marked) để chú ý
+                    else if (pos !== null && markedSet.has(pos)) {
                         target.classList.add('marked');
+                    }
+                    // 6. Nếu chữ cái thường này nằm trong danh sách đoán từ bàn phím chữ cái
+                    else {
+                        const cleanChar = removeToneMarks(char).toUpperCase();
+                        if (Array.isArray(revealed) && revealed.includes(cleanChar)) {
+                            target.classList.add('revealed');
+                            target.innerText = removeToneMarks(char);
+                        }
                     }
                 });
             });
@@ -616,6 +676,7 @@
                 const layoutData = parseBoardLayout(data.board_layout);
                 const markedPositions = parsePosList(data.marked_positions);
                 const revealedPositions = parsePosList(data.revealed_positions);
+                const decodingPositions = parsePosList(data.decoding_positions);
                 const isFull = data.is_full_reveal || false;
 
                 updateBoard(
@@ -625,7 +686,8 @@
                     layoutData,
                     markedPositions,
                     revealedPositions,
-                    isFull
+                    isFull,
+                    decodingPositions
                 );
 
                 if (data.border_color) {
@@ -675,8 +737,8 @@
 
                 if (newData.puzzle_text !== undefined || newData.board_layout !== undefined
                     || newData.revealed_chars !== undefined || newData.marked_positions !== undefined
-                    || newData.revealed_positions !== undefined || newData.category !== undefined
-                    || newData.is_full_reveal !== undefined) {
+                    || newData.revealed_positions !== undefined || newData.decoding_positions !== undefined
+                    || newData.category !== undefined || newData.is_full_reveal !== undefined) {
 
                     const puzzle = newData.puzzle_text !== undefined ? (newData.puzzle_text || "") : boardStateCache.puzzle_text;
 
@@ -698,6 +760,10 @@
                         ? parsePosList(newData.revealed_positions)
                         : boardStateCache.revealedPositions;
 
+                    const decodingPositions = newData.decoding_positions !== undefined
+                        ? parsePosList(newData.decoding_positions)
+                        : boardStateCache.decodingPositions;
+
                     updateBoard(
                         puzzle,
                         revealed,
@@ -705,7 +771,8 @@
                         layoutData,
                         markedPositions,
                         revealedPositions,
-                        isFull
+                        isFull,
+                        decodingPositions
                     );
                 }
 

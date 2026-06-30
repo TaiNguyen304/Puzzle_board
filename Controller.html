@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>Controller</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <style>
         :root {
             --pink: #ff00cc;
@@ -363,6 +363,9 @@
             </div>
 
             <button class="btn-reveal-all" onclick="revealAll()">HIỆN TOÀN BỘ Ô CHỮ (CÓ DẤU)</button>
+            <button onclick="revealDecodingCells()"
+                style="background-color: #ffff00; color: #000000; font-weight: bold !important; width: 100%; margin-top: 10px; border: 2px solid #000;">HIỆN
+                Ô GIẢI MÃ</button>
             <button class="btn-reset" onclick="resetBoard()">RESET BẢNG TRỐNG</button>
         </div>
 
@@ -622,14 +625,105 @@
             else console.log("Đã phát tín hiệu âm thanh thành công:", soundSignal);
         }
 
+        function getCharFromCell(value) {
+            if (value == null) return "";
+            if (typeof value === 'object') {
+                if (value.char != null) return String(value.char).trim();
+                if (value.v != null) return String(value.v).trim();
+            }
+            return String(value).trim();
+        }
+
+        function extractDecodingPositions(layout) {
+            const positions = [];
+            if (!layout || !Array.isArray(layout)) return positions;
+            for (let r = 0; r < layout.length; r++) {
+                const row = layout[r];
+                if (!Array.isArray(row)) continue;
+                for (let c = 0; c < row.length; c++) {
+                    const cellData = row[c];
+                    if (cellData && typeof cellData === 'object' && cellData.isDecoding) {
+                        const pos = rcToPosition(r, c);
+                        if (pos !== null) positions.push(pos);
+                    }
+                }
+            }
+            return positions;
+        }
+
+        function getCellValue(cell) {
+            if (cell == null || cell === '') return null;
+            if (typeof cell === 'object' && 'v' in cell) {
+                const v = cell.v;
+                if (v == null || String(v).trim() === '') return null;
+                return String(v).trim();
+            }
+            const s = String(cell).trim();
+            return s === '' ? null : s;
+        }
+
+        function getExcelCellText(value) {
+            if (value == null) return '';
+            if (typeof value === 'object') {
+                if (Array.isArray(value.richText)) return value.richText.map(t => t.text || '').join('').trim();
+                if (value.result != null) return String(value.result).trim();
+                if (value.text != null) return String(value.text).trim();
+            }
+            return String(value).trim();
+        }
+
+        function isYellowExcelFill(cell) {
+            const fill = cell && cell.fill;
+            if (!fill || fill.type !== 'pattern' || !fill.pattern || fill.pattern === 'none') return false;
+
+            const checkColor = (color) => {
+                if (!color) return false;
+                if (color.argb) {
+                    const hex = String(color.argb).toUpperCase();
+                    const rgb = hex.length >= 6 ? hex.slice(-6) : hex;
+                    if (['FFFF00', 'FFFFE0', 'FFC000', 'FFD966', 'FFF2CC', 'FFE699', 'FFFF99'].includes(rgb)) return true;
+                    const r = parseInt(rgb.slice(0, 2), 16);
+                    const g = parseInt(rgb.slice(2, 4), 16);
+                    const b = parseInt(rgb.slice(4, 6), 16);
+                    if (!isNaN(r) && !isNaN(g) && !isNaN(b) && r >= 180 && g >= 180 && b <= 120) return true;
+                }
+                if ([6, 13, 19, 43, 44].includes(color.indexed)) return true;
+                return false;
+            };
+
+            return checkColor(fill.fgColor) || checkColor(fill.bgColor);
+        }
+
+        function buildRowsFromExcelWorksheet(worksheet) {
+            const dim = worksheet.dimensions;
+            const maxRow = dim ? dim.bottom : (worksheet.rowCount || 0);
+            const maxCol = dim ? dim.right : (worksheet.columnCount || 0);
+            const rows = [];
+            for (let r = 1; r <= maxRow; r++) {
+                const rowData = [];
+                const row = worksheet.getRow(r);
+                for (let c = 1; c <= maxCol; c++) {
+                    const cell = row.getCell(c);
+                    const text = getExcelCellText(cell.value);
+                    const isYellow = isYellowExcelFill(cell);
+                    if (text !== '' || isYellow) {
+                        rowData[c - 1] = { v: text, isYellow };
+                    } else {
+                        rowData[c - 1] = null;
+                    }
+                }
+                rows[r - 1] = rowData;
+            }
+            return rows;
+        }
+
         function getPuzzleStringWithSpaces(layout, isTungHoanh = false) {
             if (!layout || !Array.isArray(layout)) return "-";
             const words = [];
             let currentWord = "";
 
             const isEmptyCell = (value) => {
-                if (value == null) return true;
-                const cell = String(value).trim();
+                const cell = getCharFromCell(value);
                 return cell === "" || /^(null|undefined|nan)$/i.test(cell);
             };
 
@@ -639,9 +733,9 @@
                     if (!Array.isArray(row)) return;
                     currentWord = "";
                     for (let i = 0; i < row.length; i++) {
-                        const char = row[i];
-                        if (!isEmptyCell(char)) {
-                            currentWord += String(char).trim();
+                        const char = getCharFromCell(row[i]);
+                        if (!isEmptyCell(row[i])) {
+                            currentWord += char;
                         } else {
                             // Chỉ lấy các từ có >= 2 ký tự để tránh các điểm giao cắt đơn lẻ
                             if (currentWord.length > 1) words.push(currentWord);
@@ -657,7 +751,7 @@
                     currentWord = "";
                     for (let r = 0; r < layout.length; r++) {
                         if (layout[r] && !isEmptyCell(layout[r][c])) {
-                            currentWord += String(layout[r][c]).trim();
+                            currentWord += getCharFromCell(layout[r][c]);
                         } else {
                             if (currentWord.length > 1) words.push(currentWord);
                             currentWord = "";
@@ -671,9 +765,9 @@
                     if (!Array.isArray(row)) return;
                     currentWord = "";
                     for (let i = 0; i < row.length; i++) {
-                        const char = row[i];
-                        if (!isEmptyCell(char)) {
-                            currentWord += String(char).trim();
+                        const char = getCharFromCell(row[i]);
+                        if (!isEmptyCell(row[i])) {
+                            currentWord += char;
                         } else if (currentWord !== "") {
                             words.push(currentWord);
                             currentWord = "";
@@ -740,11 +834,59 @@
             const layout = [];
             const { cols12, cols14 } = config;
 
+            // Hàm phụ helper để bóc tách ký tự và kiểm tra ô giải mã (tô màu vàng)
             const getChars = (rowArr, start, end) => {
-                if (!rowArr) return new Array(end - start + 1).fill("");
-                return rowArr.slice(start, end + 1).map(c => (c != null && c !== '') ? String(c).trim() : "");
+                const result = [];
+                for (let i = start; i <= end; i++) {
+                    const cellObj = rowArr ? rowArr[i] : null;
+
+                    // 1. Nếu ô trống (null hoặc undefined hoặc chuỗi rỗng)
+                    if (cellObj == null || cellObj === '') {
+                        result.push("");
+                        continue;
+                    }
+
+                    let char = "";
+                    let isYellow = false;
+
+                    // 2. Nếu cellObj là Object từ ExcelJS ({v, isYellow}) hoặc SheetJS ({v, s})
+                    if (typeof cellObj === 'object' && cellObj !== null) {
+                        char = (cellObj.v != null) ? String(cellObj.v).trim() : "";
+                        if (cellObj.isYellow) isYellow = true;
+                        if (cellObj.s && cellObj.s.fill && cellObj.s.fill.fgColor) {
+                            const fg = cellObj.s.fill.fgColor;
+                            if (fg.rgb) {
+                                const colorHex = String(fg.rgb).toUpperCase();
+                                if (colorHex === "FFFF00" || colorHex === "FFFFFF00" || colorHex.endsWith("FFFF00") || colorHex === "FFFFE0") {
+                                    isYellow = true;
+                                }
+                            }
+                            if (fg.indexed === 6 || fg.indexed === 13 || fg.indexed === 19) {
+                                isYellow = true;
+                            }
+                        }
+                    } else {
+                        // Nếu dữ liệu truyền vào chỉ là chuỗi text thông thường (string)
+                        char = String(cellObj).trim();
+                    }
+
+                    // 3. Phân loại cấu trúc trả về
+                    if (char !== "") {
+                        if (isYellow) {
+                            // Nếu ô được tô màu vàng -> Chuyển thành Object chứa cờ giải mã
+                            result.push({ char: char, isDecoding: true });
+                        } else {
+                            // Ô chữ trắng bình thường -> Giữ nguyên chuỗi ký tự
+                            result.push(char);
+                        }
+                    } else {
+                        result.push("");
+                    }
+                }
+                return result;
             };
 
+            // Tạo cấu trúc 4 dòng layout đồng bộ với logic chia cột cũ của bạn
             layout.push(["", ...getChars(block[0], cols12[0], cols12[1]), ""]);
             layout.push(getChars(block[1], cols14[0], cols14[1]));
             layout.push(getChars(block[2], cols14[0], cols14[1]));
@@ -753,32 +895,37 @@
             return layout;
         }
 
-        document.getElementById('excelFile').addEventListener('change', (e) => {
+        document.getElementById('excelFile').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
             document.getElementById('file-name-display').innerText = "📁 " + file.name;
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                const data = new Uint8Array(evt.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const workbook = new ExcelJS.Workbook();
+                await workbook.xlsx.load(arrayBuffer);
+                const worksheet = workbook.worksheets[0];
+                if (!worksheet) {
+                    showPopup("Lỗi", "Không tìm thấy sheet trong file Excel.");
+                    return;
+                }
+                const rows = buildRowsFromExcelWorksheet(worksheet);
 
                 excelData = [];
+                let decodeCount = 0;
                 for (let i = 1; i < rows.length; i += 4) {
                     const block = rows.slice(i, i + 4);
-                    if (!block[0] || !block[0][0]) continue;
+                    const roundName = getCellValue(block[0] && block[0][0]);
+                    if (!roundName) continue;
 
-                    const roundName = String(block[0][0]).trim();
                     const options = [];
 
                     ["P1", "P2", "P3"].forEach(key => {
                         const config = COL_MAP[key];
-                        const catName = block[0][config.cat];
+                        const catName = getCellValue(block[0] && block[0][config.cat]);
                         if (catName) {
-                            options.push({
-                                cat: String(catName).trim(),
-                                layout: buildLayoutFromBlock(block, config)
-                            });
+                            const layout = buildLayoutFromBlock(block, config);
+                            decodeCount += extractDecodingPositions(layout).length;
+                            options.push({ cat: catName, layout });
                         }
                     });
 
@@ -786,9 +933,11 @@
                         excelData.push({ Vong: roundName, Options: options });
                     }
                 }
-                showPopup("Hệ Thống", `Đã nạp file Excel thành công!`);
-            };
-            reader.readAsArrayBuffer(file);
+                showPopup("Hệ Thống", `Đã nạp file Excel thành công! (Phát hiện ${decodeCount} ô giải mã)`);
+            } catch (err) {
+                console.error(err);
+                showPopup("Lỗi", "Không đọc được file Excel: " + err.message);
+            }
         });
 
         function handleRound(roundName, hasPopup) {
@@ -860,6 +1009,8 @@
             currentPuzzleRaw = rawText;
             usedChars = [];
 
+            const decodingPositions = extractDecodingPositions(layout);
+
             const { error } = await db.from('wheel_game').update({
                 puzzle_text: rawText,
                 category: String(cat).toUpperCase(),
@@ -868,6 +1019,7 @@
                 marked_positions: "",
                 revealed_positions: "",
                 board_layout: JSON.stringify(layout),
+                decoding_positions: decodingPositions.join(','),
                 is_full_reveal: false
             }).eq('id', 1);
 
@@ -875,7 +1027,10 @@
                 document.getElementById('st-round').innerText = selectedRoundName;
                 document.getElementById('st-cat').innerText = cat;
                 document.getElementById('st-puz').innerText = rawText;
+                console.log(`Đã gửi bảng: ${decodingPositions.length} ô giải mã tại vị trí [${decodingPositions.join(', ')}]`);
                 renderKeyboard();
+            } else {
+                console.error('Lỗi sendToBoard:', error);
             }
         }
 
@@ -923,7 +1078,11 @@
             let marked = (row && row.marked_positions) ? row.marked_positions.split(',').filter(Boolean).map(Number) : [];
             let revPos = (row && row.revealed_positions) ? row.revealed_positions.split(',').filter(Boolean).map(Number) : [];
 
+            // Lấy danh sách chữ cái đã công khai trên DB
+            let currentRevealedChars = (row && row.revealed_chars) ? row.revealed_chars.split(',').filter(Boolean) : [];
+
             if (mode === 2) {
+                // Chỉ lật các ô đã được đánh dấu ở giai đoạn trước
                 positions = positions.filter(pos => marked.includes(pos));
                 if (positions.length === 0) return;
             }
@@ -932,27 +1091,45 @@
                 const pos = positions[i];
 
                 if (mode === 1) {
+                    // GIAI ĐOẠN 2: Đánh dấu ô (Chuyển ô sang màu xanh dương nhấp nháy trên bảng)
                     if (!marked.includes(pos)) marked.push(pos);
                     await db.from('wheel_game').update({ marked_positions: marked.join(',') }).eq('id', 1);
                 }
                 else {
+                    // GIAI ĐOẠN 3: Lật mở hiện chữ
                     const rc = positionToRC(pos);
                     const ch = currentLayout[rc.r][rc.c];
                     if (ch) {
                         if (!revPos.includes(pos)) revPos.push(pos);
                         marked = marked.filter(p => p !== pos);
 
+                        // Lấy chữ cái thực tế của ô đó ra để đưa vào danh sách hiển thị
+                        let cellChar = (ch && typeof ch === 'object') ? ch.char : ch;
+                        let norm = String(cellChar).normalize('NFD')
+                            .replace(/[̣̀́̃̉]/g, '')
+                            .normalize('NFC')
+                            .toUpperCase();
+
+                        if (!currentRevealedChars.includes(norm)) {
+                            currentRevealedChars.push(norm);
+                        }
+
+                        // Đồng bộ lên Database -> Puzzleboard và Player thấy chữ cái này sẽ lập tức hiển thị nội dung
                         await db.from('wheel_game').update({
                             marked_positions: marked.join(','),
-                            revealed_positions: revPos.join(',')
+                            revealed_positions: revPos.join(','),
+                            revealed_chars: currentRevealedChars.join(',')
                         }).eq('id', 1);
                     }
                 }
 
+                // Tạo khoảng trễ lật từng ô nếu có nhiều ô
                 if (i < positions.length - 1) {
                     await new Promise(r => setTimeout(r, 1200));
                 }
             }
+
+            // Xóa vị trí chờ sau khi quy trình hoàn tất
             await db.from('wheel_game').update({ pending_positions: '' }).eq('id', 1);
         }
 
@@ -1133,11 +1310,16 @@
 
         async function revealAll() {
             usedChars = [...VIETNAMESE_ALPHABET];
+
+            const decodingPositions = extractDecodingPositions(currentLayout);
+
             await db.from('wheel_game').update({
                 revealed_chars: usedChars.join(','),
                 pending_positions: "",
-                is_full_reveal: true
+                is_full_reveal: true,
+                decoding_positions: decodingPositions.join(',')
             }).eq('id', 1);
+
             renderKeyboard();
         }
 
@@ -1149,6 +1331,7 @@
                 pending_positions: "",
                 marked_positions: "", revealed_positions: "",
                 board_layout: "[]", is_full_reveal: false,
+                decoding_positions: "",
                 border_color: 'rgb(128,0,128)'
             }).eq('id', 1);
             usedChars = []; currentLayout = null; currentPuzzleRaw = "";
@@ -1160,20 +1343,33 @@
         async function pressKey(char) {
             if (!usedChars.includes(char)) {
                 let positions = [];
-
+                // Lấy danh sách ô đã được mở công khai từ trước để tránh dò đè lên
                 const { data: row } = await db.from('wheel_game').select('revealed_positions').eq('id', 1).maybeSingle();
                 let revPos = (row && row.revealed_positions) ? row.revealed_positions.split(',').filter(Boolean).map(Number) : [];
 
                 if (currentLayout) {
                     for (let r = 0; r < 4; r++) {
                         for (let c = 0; c < 14; c++) {
-                            let cellChar = currentLayout[r][c];
+                            let cellData = currentLayout[r][c];
+                            let cellChar = "";
+                            let isDecoding = false;
+                            if (cellData && typeof cellData === 'object') {
+                                cellChar = cellData.char;
+                                isDecoding = !!cellData.isDecoding;
+                            } else {
+                                cellChar = cellData;
+                            }
+
+                            // Nếu là ô giải mã, bỏ qua ngay
+                            if (isDecoding) {
+                                continue;
+                            }
+
                             if (cellChar) {
                                 let norm = cellChar.normalize('NFD')
-                                    .replace(/[̣̀́̃̉]/g, '')
+                                    .replace(/[̣̀́̃̉]/g, '')
                                     .normalize('NFC')
                                     .toUpperCase();
-
                                 if (norm === char) {
                                     let pos = rcToPosition(r, c);
                                     if (pos && !revPos.includes(pos)) {
@@ -1185,25 +1381,33 @@
                     }
                 }
 
+                // --- ĐOẠN ĐƯỢC CHỈNH SỬA & THÊM MỚI TẠI ĐÂY ---
+                // Thêm chữ cái vào mảng đã sử dụng của Controller
+                usedChars.push(char);
+
+                // Đồng bộ danh sách used_chars mới lên database để Host ẩn đi (kể cả khi không có ô nào chứa chữ này)
+                await db.from('wheel_game').update({
+                    revealed_chars: usedChars.join(',')
+                }).eq('id', 1);
+
+                // Nếu chữ cái đó có xuất hiện trên các ô thường
                 if (positions.length > 0) {
                     document.getElementById('numPos').value = positions.length;
                     generatePosInputs();
-                    const inputs = document.querySelectorAll('.pos-item');
+                    const inputs = document.getElementById('posContainer').querySelectorAll('input');
                     positions.forEach((p, idx) => {
                         if (inputs[idx]) inputs[idx].value = p;
                     });
+                    await db.from('wheel_game').update({ pending_positions: positions.join(',') }).eq('id', 1);
                 } else {
+                    // Nếu chữ không xuất hiện, reset lại các input ô vị trí về trống
                     document.getElementById('numPos').value = "";
-                    generatePosInputs();
+                    document.getElementById('posContainer').innerHTML = "";
+                    await db.from('wheel_game').update({ pending_positions: '' }).eq('id', 1);
                 }
 
-                usedChars.push(char);
+                // Cập nhật lại giao diện bàn phím của Controller
                 renderKeyboard();
-
-                await db.from('wheel_game').update({
-                    revealed_chars: usedChars.join(','),
-                    pending_positions: positions.length > 0 ? positions.join(',') : ''
-                }).eq('id', 1);
             }
         }
 
@@ -1407,6 +1611,40 @@
             } else {
                 console.log(`Đã cập nhật đèn ${playerColor} thành ${lightType}`);
             }
+        }
+
+        async function revealDecodingCells() {
+            if (!currentLayout) return;
+            let decodingPositions = [];
+
+            // Quét tìm toàn bộ tọa độ ô giải mã
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 14; c++) {
+                    let cellData = currentLayout[r][c];
+                    let isDecoding = (cellData && typeof cellData === 'object') ? cellData.isDecoding : false;
+                    let pos = rcToPosition(r, c);
+                    if (pos && isDecoding) {
+                        decodingPositions.push(pos);
+                    }
+                }
+            }
+
+            if (decodingPositions.length === 0) {
+                return;
+            }
+
+            // Lấy dữ liệu các ô đã lật sẵn trên DB hiện tại để gộp vào
+            const { data } = await db.from('wheel_game').select('revealed_positions').eq('id', 1).single();
+            let currentRev = data && data.revealed_positions ? data.revealed_positions.split(',').filter(Boolean).map(Number) : [];
+
+            // Trộn chung danh sách ô giải mã vào danh sách lật chữ công khai
+            decodingPositions.forEach(p => {
+                if (!currentRev.includes(p)) currentRev.push(p);
+            });
+
+            await db.from('wheel_game').update({
+                revealed_positions: currentRev.join(',')
+            }).eq('id', 1);
         }
 
         document.addEventListener('contextmenu', e => e.preventDefault());
