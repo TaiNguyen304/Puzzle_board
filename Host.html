@@ -599,10 +599,18 @@
             const words = [];
             let currentWord = "";
 
+            // Hàm bổ trợ lấy ký tự thực (xử lý cả dạng chuỗi và dạng Object {char: 'A'})
+            const getCharValue = (cell) => {
+                if (cell == null) return "";
+                if (typeof cell === 'object' && cell.char !== undefined) {
+                    return String(cell.char).trim();
+                }
+                return String(cell).trim();
+            };
+
             const isEmptyCell = (value) => {
-                if (value == null) return true;
-                const cell = String(value).trim();
-                return cell === "" || /^(null|undefined|nan)$/i.test(cell);
+                const cellStr = getCharValue(value);
+                return cellStr === "" || /^(null|undefined|nan)$/i.test(cellStr);
             };
 
             if (isTungHoanh) {
@@ -611,9 +619,9 @@
                     if (!Array.isArray(row)) return;
                     currentWord = "";
                     for (let i = 0; i < row.length; i++) {
-                        const char = row[i];
-                        if (!isEmptyCell(char)) {
-                            currentWord += String(char).trim();
+                        const cell = row[i];
+                        if (!isEmptyCell(cell)) {
+                            currentWord += getCharValue(cell);
                         } else {
                             if (currentWord.length > 1) words.push(currentWord);
                             currentWord = "";
@@ -628,7 +636,7 @@
                     currentWord = "";
                     for (let r = 0; r < layout.length; r++) {
                         if (layout[r] && !isEmptyCell(layout[r][c])) {
-                            currentWord += String(layout[r][c]).trim();
+                            currentWord += getCharValue(layout[r][c]);
                         } else {
                             if (currentWord.length > 1) words.push(currentWord);
                             currentWord = "";
@@ -637,14 +645,14 @@
                     if (currentWord.length > 1) words.push(currentWord);
                 }
             } else {
-                // Đọc bình thường
+                // Đọc bình thường từng hàng
                 layout.forEach(row => {
                     if (!Array.isArray(row)) return;
                     currentWord = "";
                     for (let i = 0; i < row.length; i++) {
-                        const char = row[i];
-                        if (!isEmptyCell(char)) {
-                            currentWord += String(char).trim();
+                        const cell = row[i];
+                        if (!isEmptyCell(cell)) {
+                            currentWord += getCharValue(cell);
                         } else if (currentWord !== "") {
                             words.push(currentWord);
                             currentWord = "";
