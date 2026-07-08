@@ -1323,6 +1323,7 @@
                 marked_positions: "", revealed_positions: "",
                 board_layout: "[]", is_full_reveal: false,
                 decoding_positions: "",
+                revealed_chars: '',
                 border_color: 'rgb(128,0,128)'
             }).eq('id', 1);
             usedChars = []; currentLayout = null; currentPuzzleRaw = "";
@@ -1381,21 +1382,36 @@
 
                 // Nếu chữ cái đó có xuất hiện trên các ô thường
                 if (positions.length > 0) {
+                    // Cập nhật số lượng ô tìm thấy vào ô nhập liệu
                     document.getElementById('numPos').value = positions.length;
+
+                    // Gọi hàm sinh các ô input tương ứng với số lượng ô tìm thấy
                     generatePosInputs();
+
+                    // Điền giá trị vị trí (pos) vào từng ô input vừa được tạo ra
                     const inputs = document.getElementById('posContainer').querySelectorAll('input');
                     positions.forEach((p, idx) => {
                         if (inputs[idx]) inputs[idx].value = p;
                     });
-                    await db.from('wheel_game').update({ pending_positions: positions.join(',') }).eq('id', 1);
+
+                    // Đẩy danh sách vị trí chờ lật lên cơ sở dữ liệu Supabase
+                    await db.from('wheel_game').update({
+                        pending_positions: positions.join(','),
+                        revealed_chars: usedChars.join(',') // <--- THÊM DÒNG NÀY ĐỂ BÁO HOST ẨN PHÍM
+                    }).eq('id', 1);
                 } else {
                     // Nếu chữ không xuất hiện, reset lại các input ô vị trí về trống
                     document.getElementById('numPos').value = "";
                     document.getElementById('posContainer').innerHTML = "";
-                    await db.from('wheel_game').update({ pending_positions: '' }).eq('id', 1);
+
+                    // Xóa dữ liệu hàng đợi lật chữ trên db
+                    await db.from('wheel_game').update({
+                        pending_positions: '',
+                        revealed_chars: usedChars.join(',') // <--- THÊM DÒNG NÀY ĐỂ BÁO HOST ẨN PHÍM KỂ CẢ KHI ĐOÁN SAI
+                    }).eq('id', 1);
                 }
 
-                // Cập nhật lại giao diện bàn phím của Controller
+                // Cập nhật lại giao diện bàn phím của Controller để chuyển trạng thái nút vừa nhấn (ví dụ: đổi màu/vô hiệu hóa)
                 renderKeyboard();
             }
         }
