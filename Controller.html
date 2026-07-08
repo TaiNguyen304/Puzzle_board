@@ -1096,29 +1096,20 @@
                     await db.from('wheel_game').update({ marked_positions: marked.join(',') }).eq('id', 1);
                 }
                 else {
-                    // GIAI ĐOẠN 3: Lật mở hiện chữ
+                    // GIAI ĐOẠN 3: Lật mở hiện chữ (Chỉ lật đúng vị trí chỉ định, không lật ô trùng chữ)
                     const rc = positionToRC(pos);
                     const ch = currentLayout[rc.r][rc.c];
                     if (ch) {
                         if (!revPos.includes(pos)) revPos.push(pos);
                         marked = marked.filter(p => p !== pos);
 
-                        // Lấy chữ cái thực tế của ô đó ra để đưa vào danh sách hiển thị
-                        let cellChar = (ch && typeof ch === 'object') ? ch.char : ch;
-                        let norm = String(cellChar).normalize('NFD')
-                            .replace(/[̣̀́̃̉]/g, '')
-                            .normalize('NFC')
-                            .toUpperCase();
+                        // LOẠI BỎ logic đẩy chữ cái norm vào currentRevealedChars và loại bỏ cập nhật trường revealed_chars tại đây.
+                        // Điều này đảm bảo hệ thống dựa hoàn toàn vào vị trí (pos) trong revPos để hiển thị, tránh việc lật diện rộng các ô trùng chữ.
 
-                        if (!currentRevealedChars.includes(norm)) {
-                            currentRevealedChars.push(norm);
-                        }
-
-                        // Đồng bộ lên Database -> Puzzleboard và Player thấy chữ cái này sẽ lập tức hiển thị nội dung
+                        // Đồng bộ lên Database -> Chỉ cập nhật mảng vị trí đánh dấu và vị trí đã mở công khai
                         await db.from('wheel_game').update({
                             marked_positions: marked.join(','),
-                            revealed_positions: revPos.join(','),
-                            revealed_chars: currentRevealedChars.join(',')
+                            revealed_positions: revPos.join(',')
                         }).eq('id', 1);
                     }
                 }
@@ -1385,10 +1376,8 @@
                 // Thêm chữ cái vào mảng đã sử dụng của Controller
                 usedChars.push(char);
 
-                // Đồng bộ danh sách used_chars mới lên database để Host ẩn đi (kể cả khi không có ô nào chứa chữ này)
-                await db.from('wheel_game').update({
-                    revealed_chars: usedChars.join(',')
-                }).eq('id', 1);
+                // BƯỚC 1: Loại bỏ việc cập nhật revealed_chars tại đây để hệ thống không tự động hiện chữ cái luôn.
+                // Chỉ lưu lại trạng thái bàn phím đã nhấn trên db nếu cần, hoặc bỏ qua việc đẩy vào revealed_chars ở bước này.
 
                 // Nếu chữ cái đó có xuất hiện trên các ô thường
                 if (positions.length > 0) {

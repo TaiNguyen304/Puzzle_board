@@ -822,6 +822,7 @@
                 c.className = 'cell';
                 c.innerText = '';
                 c.style.backgroundImage = ''; // Reset ảnh nền giải mã
+                c.style.backgroundColor = ''; // Reset màu nền
             });
 
             if (Array.isArray(boardStateCache.board_layout)) {
@@ -840,28 +841,54 @@
                         const pos = rcToPosition(rIdx, cIdx);
                         const isDecodingCell = (pos != null && (decodingSet.has(pos) || isDecoding));
 
-                        if (isDecodingCell) {
-                            if (revealedPosSet.has(pos)) {
-                                target.classList.add('active', 'revealed');
+                        // Đưa ô chữ vào trạng thái hoạt động (có chữ)
+                        target.classList.add('active');
+
+                        // 1. Nếu là Ô GIẢI MÃ và đã được kích hoạt mở công khai
+                        if (isDecodingCell && pos != null && revealedPosSet.has(pos)) {
+                            target.classList.add('revealed');
+                            target.innerText = removeToneMarks(ch);
+                            target.style.backgroundImage = 'none';
+                            target.style.backgroundColor = 'white';
+                        } 
+                        // 2. Nếu là Ô GIẢI MÃ nhưng chưa lật (Giữ ẩn tuyệt đối, hiện hình Giải mã.png)
+                        else if (isDecodingCell) {
+                            target.className = 'cell decoding';
+                            target.innerText = '';
+                            target.style.backgroundImage = 'url("Giải mã.png")';
+                            target.style.backgroundSize = '110% 110%';
+                            target.style.backgroundPosition = 'center';
+                            target.style.backgroundRepeat = 'no-repeat';
+                            target.style.backgroundColor = '#ffcc00';
+                        } 
+                        // 3. Nếu đang bật nút HIỆN TOÀN BỘ Ô CHỮ (Hiện chữ nguyên bản có dấu gốc)
+                        else if (boardStateCache.is_full_reveal) {
+                            target.classList.add('revealed');
+                            target.innerText = ch; // Hiện chữ gốc có dấu chuẩn xác
+                            target.style.backgroundImage = 'none';
+                            target.style.backgroundColor = 'white';
+                        } 
+                        // 4. Nếu là ô thường và đã lật theo vị trí cụ thể (Áp dụng cho quy trình lật hoặc nhập tay từ Controller)
+                        else if (pos != null && revealedPosSet.has(pos)) {
+                            target.classList.add('revealed');
+                            target.innerText = removeToneMarks(ch);
+                            target.style.backgroundImage = 'none';
+                            target.style.backgroundColor = 'white';
+                        } 
+                        // 5. Nếu ô chữ đang được bôi màu đánh dấu nhấp nháy (Giai đoạn 2 của quy trình)
+                        else if (pos != null && markedSet.has(pos)) {
+                            target.classList.add('marked');
+                        } 
+                        // 6. Nếu chữ cái này nằm trong danh sách đoán từ bàn phím chữ cái
+                        else {
+                            const cleanChar = removeToneMarks(ch).toUpperCase();
+                            // Bắt buộc phải có điều kiện (pos !== null && revealedPosSet.has(pos)) để ép mở đúng vị trí,
+                            // Chặn đứng hoàn toàn lỗi tự động lật lan truyền các chữ cái giống nhau.
+                            if (Array.isArray(boardStateCache.revealed_chars) && boardStateCache.revealed_chars.includes(cleanChar) && pos != null && revealedPosSet.has(pos)) {
+                                target.classList.add('revealed');
                                 target.innerText = removeToneMarks(ch);
                                 target.style.backgroundImage = 'none';
                                 target.style.backgroundColor = 'white';
-                            } else {
-                                target.className = 'cell decoding';
-                                target.innerText = '';
-                                target.style.backgroundImage = 'url("Giải mã.png")';
-                                target.style.backgroundSize = '110% 110%';
-                                target.style.backgroundPosition = 'center';
-                                target.style.backgroundRepeat = 'no-repeat';
-                                target.style.backgroundColor = '#ffcc00';
-                            }
-                        } else {
-                            target.classList.add('active');
-                            if (boardStateCache.is_full_reveal || (pos != null && revealedPosSet.has(pos))) {
-                                target.innerText = boardStateCache.is_full_reveal ? ch : removeToneMarks(ch);
-                                target.classList.add('revealed');
-                            } else if (pos != null && markedSet.has(pos)) {
-                                target.classList.add('marked');
                             }
                         }
                     });

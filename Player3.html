@@ -547,9 +547,11 @@
                     // 6. Nếu chữ cái thường này nằm trong danh sách đoán từ bàn phím chữ cái
                     else {
                         const cleanChar = removeToneMarks(char).toUpperCase();
-                        if (Array.isArray(revealed) && revealed.includes(cleanChar)) {
+                        if (Array.isArray(revealed) && revealed.includes(cleanChar) && pos !== null && revealedPosSet.has(pos)) {
                             target.classList.add('revealed');
                             target.innerText = removeToneMarks(char);
+                            target.style.backgroundImage = 'none';
+                            target.style.backgroundColor = 'white';
                         }
                     }
                 });
