@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Soundboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --purple-bg: purple;
+            --purple-btn: green;
+            --purple-hover: orange;
+            --stop-btn: red;
+            --stop-hover: orange;
+        }
+
+        * {
+            font-weight: bold !important;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--purple-bg);
+            color: #ffffff;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .soundboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .soundboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .sound-btn {
+            background-color: var(--purple-btn);
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            border-radius: 8px;
+            padding: 20px 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .sound-btn:hover {
+            background-color: var(--purple-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .sound-btn:active {
+            transform: translateY(1px);
+        }
+
+        .stop-btn {
+            grid-column: span 4;
+            background-color: var(--stop-btn);
+            font-size: 1.3rem;
+            padding: 22px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .stop-btn {
+                grid-column: span 2;
+            }
+        }
+
+        .stop-btn:hover {
+            background-color: var(--stop-hover);
+        }
+
+        #status {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: yellow;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Bảng Điều Khiển Âm Thanh</h1>
+
+    <h3>Soundboard(2012)</h3>
+    <div class="soundboard-grid">
+        <button class="sound-btn" onclick="triggerSound('Nhạc nền 1.mp3')">Nhạc nền 1</button>
+        <button class="sound-btn" onclick="triggerSound('Nhạc nền 2.mp3')">Nhạc nền 2</button>
+        <button class="sound-btn" onclick="triggerSound('Nhạc nền 3.mp3')">Nhạc nền 3</button>
+        <button class="sound-btn" onclick="triggerSound('Nhạc nền 4.mp3')">Nhạc nền 4</button>
+        <button class="sound-btn" onclick="triggerSound('Nhạc nền 5.mp3')">Nhạc nền 5</button>
+        <button class="sound-btn" onclick="triggerSound('Nhạc nền 6.mp3')">Nhạc nền 6</button>
+        <button class="sound-btn" onclick="triggerSound('Nhạc nền 7.mp3')">Nhạc nền 7</button>
+
+        <button class="sound-btn" onclick="triggerSound('Intro_2.mp3')">Intro</button>
+        <button class="sound-btn" onclick="triggerSound('Open_2_1.mp3')">Open</button>
+        <button class="sound-btn" onclick="triggerSound('Credit.mp3')">Credit</button>
+        <button class="sound-btn" onclick="triggerSound('Phần thưởng.mp3')">Phần thưởng</button>
+        <button class="sound-btn" onclick="triggerSound('Ô Bí Mật.mp3')">Ô Bí Mật</button>
+        <button class="sound-btn" onclick="triggerSound('Mất Lượt.mp3')">Mất Lượt</button>
+        <button class="sound-btn" onclick="triggerSound('Mất Điểm.mp3')">Mất Điểm</button>
+        <button class="sound-btn" onclick="triggerSound('Thêm Lượt.mp3')">Thêm Lượt</button>
+        <button class="sound-btn" onclick="triggerSound('May Mắn.mp3')">May Mắn</button>
+        <button class="sound-btn" onclick="triggerSound('Nhân Đôi.mp3')">Nhân Đôi</button>
+        <button class="sound-btn" onclick="triggerSound('Chia Đôi.mp3')">Chia Đôi</button>
+
+        <button class="sound-btn" onclick="triggerSound('Vòng đặc biệt.mp3')">Vòng đặc biệt</button>
+        <button class="sound-btn" onclick="triggerSound('Vòng chung kết.mp3')">Vòng chung kết</button>
+        <button class="sound-btn" onclick="triggerSound('Nhạc quay Nón 1.mp3')">Nhạc quay Nón 1</button>
+        <button class="sound-btn" onclick="triggerSound('Nhạc quay Nón 2.mp3')">Nhạc quay Nón 2</button>
+        <button class="sound-btn" onclick="triggerSound('Nhạc quay Nón 3.mp3')">Nhạc quay Nón 3</button>
+        <button class="sound-btn" onclick="triggerSound('Người chơi.mp3')">Người chơi</button>
+        <button class="sound-btn" onclick="triggerSound('30s.mp3')">30 giây</button>
+        <button class="sound-btn" onclick="triggerSound('10s_2.mp3')">10 giây</button>
+
+        <button class="sound-btn stop-btn" onclick="triggerSound('STOP')">DỪNG NHẠC</button>
+    </div>
+
+    <h3>Soundboard(2001)</h3>
+    <div class="soundboard-grid">
+        <button class="sound-btn" onclick="triggerSound('intro_2001_full.mp3')">Intro</button>
+        <button class="sound-btn" onclick="triggerSound('nhac_host_entrance.mp3')">Open</button>
+        <button class="sound-btn" onclick="triggerSound('solved 2001.mp3')">Solve</button>
+        <button class="sound-btn" onclick="triggerSound('letter_open_1.wav')">Mở chữ</button>
+        <button class="sound-btn" onclick="triggerSound('mo o chu 2001 2.mp3')">Đánh dấu</button>
+        <button class="sound-btn" onclick="triggerSound('nhac_hien_o_chu.mp3')">Hiện ô chữ</button>
+        <button class="sound-btn" onclick="triggerSound('nhac_prize_vđb_1.mp3')">Vòng Đặc biệt</button>
+        <button class="sound-btn" onclick="triggerSound('30s_vđb_2005.wav')">30 giây</button>
+
+        <button class="sound-btn stop-btn" onclick="triggerSound('STOP')">DỪNG NHẠC</button>
+    </div>
+
+    <h3>Soundboard(2011)</h3>
+    <div class="soundboard-grid">
+        <button class="sound-btn" onclick="triggerSound('intro_2001_full.mp3')">Intro</button>
+        <button class="sound-btn" onclick="triggerSound('intro 2010.mp3')">Open(1)</button>
+        <button class="sound-btn" onclick="triggerSound('Open_2.mp3')">Open(2)</button>
+        <button class="sound-btn" onclick="triggerSound('Open_3.mp3')">Open(3)</button>
+        <button class="sound-btn" onclick="triggerSound('Credit_2011.mp3')">Credit</button>
+        <button class="sound-btn" onclick="triggerSound('letter_highlight_new.wav')">Đánh dấu</button>
+        <button class="sound-btn" onclick="triggerSound('letter_open.wav')">Mở chữ</button>
+        <button class="sound-btn" onclick="triggerSound('showpuzzle.wav')">Hiện ô chữ</button>
+        <button class="sound-btn" onclick="triggerSound('solved.mp3')">Solve</button>
+        <button class="sound-btn" onclick="triggerSound('wrong_1.mp3')">Sai</button>
+        <button class="sound-btn" onclick="triggerSound('think.mp3')">10 giây</button>
+
+        <button class="sound-btn stop-btn" onclick="triggerSound('STOP')">DỪNG NHẠC</button>
+    </div>
+
+    <div id="status">Hệ thống sẵn sàng</div>
+
+    <script>
+        var SUPABASE_URL = 'https://tfdgtdderkaergijhucb.supabase.co';
+        var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGd0ZGRlcmthZXJnaWpodWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NjM5MzksImV4cCI6MjA5NDAzOTkzOX0._BOLe4xH5ZuhfXfsdS63eY9N12wyomq58GG0toi1aIE';
+        var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function triggerSound(soundName) {
+            const statusEl = document.getElementById('status');
+            statusEl.innerText = soundName === 'STOP' ? "Đang gửi lệnh dừng..." : `Đang kích hoạt: ${soundName}...`;
+
+            // Cập nhật tên file âm thanh vào bảng wheel_game (id=1), kèm theo một chuỗi timestamp ngẫu nhiên ngầm định để kích hoạt sự kiện Realtime kể cả khi bấm trùng 1 nút liên tiếp
+            const uniqueSignal = soundName + '?' + Date.now();
+
+            const { error } = await db
+                .from('wheel_game')
+                .update({ current_sound: uniqueSignal })
+                .eq('id', 1);
+
+            if (error) {
+                console.error("Lỗi gửi âm thanh:", error);
+                statusEl.innerText = "Lỗi kết nối database!";
+            } else {
+                statusEl.innerText = soundName === 'STOP' ? "Đã dừng tất cả âm thanh" : `Đang phát: ${soundName}`;
+            }
+        }
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.keyCode === 123) e.preventDefault();
+            if ((e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+
+</html>

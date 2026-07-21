@@ -369,13 +369,16 @@
             <button class="btn-reset" onclick="resetBoard()">RESET BẢNG TRỐNG</button>
         </div>
 
-        <div style="margin-top: 10px; display: flex; gap: 8px;margin-bottom: 10px;">
-            <button type="button" onclick="triggerSound('Nhac_Mo_chu_US.mp3')"
-                style="background-color: #ff00cc; color: white;">Nhạc Mở chữ US</button>
-            <button type="button" onclick="triggerSound('Nhac_mo_chu_VN_1.mp3')"
-                style="background-color: #ff00cc; color: white;">Nhạc mở chữ VN 1</button>
-            <button type="button" onclick="triggerSound('Nhac_mo_chu_VN_2.mp3')"
-                style="background-color: #ff00cc; color: white;">Nhạc mở chữ VN 2</button>
+        <!-- KHU VỰC DÀNH CHO LIST CHỌN NHẠC MỞ CHỮ -->
+        <div style="margin-top: 10px; margin-bottom: 10px;">
+            <label style="color:var(--pink); font-size:0.85rem; display:block; margin-bottom:5px;">LIST NHẠC MỞ
+                CHỮ:</label>
+            <select id="select-sound-open-word"
+                style="width:100%; padding:8px; background:#000; color:var(--neon); border:1px solid var(--pink);">
+                <option value="Nhac_Mo_chu_US.mp3">Nhạc Mở chữ US</option>
+                <option value="Nhac_mo_chu_VN_1.mp3">Nhạc Mở chữ VN 1</option>
+                <option value="Nhac_mo_chu_VN_2.mp3">Nhạc Mở chữ VN 2</option>
+            </select>
         </div>
 
         <div class="panel">
@@ -394,17 +397,38 @@
                     <button id="btnPos1" class="btn-action" onclick="processSequence(1)">Mở lần 1: Đánh dấu</button>
                     <button id="btnPos2" class="btn-action" onclick="processSequence(2)">Mở lần 2: Mở chữ</button>
                 </div>
-                <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;">
-                    <button type="button" onclick="triggerSound('Mo_o_US.mp3')"
-                        style="background-color: #39ff14; color: black;">Mở ô US</button>
-                    <button type="button" onclick="triggerSound('Mo_o_Lan_1_VN_1.mp3')"
-                        style="background-color: #39ff14; color: black;">Mở ô Lần 1 VN 1</button>
-                    <button type="button" onclick="triggerSound('Mo_o_Lan_1_VN_2.mp3')"
-                        style="background-color: #39ff14; color: black;">Mở ô Lần 1 VN 2</button>
-                    <button type="button" onclick="triggerSound('Mo_o_Lan_2_VN_1.mp3')"
-                        style="background-color: #39ff14; color: black;">Mở ô Lần 2 VN 1</button>
-                    <button type="button" onclick="triggerSound('Mo_o_Lan_2_VN_2.mp3')"
-                        style="background-color: #39ff14; color: black;">Mở ô Lần 2 VN 2</button>
+                <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                    <div>
+                        <label style="color:var(--neon); font-size:0.8rem; display:block; margin-bottom:3px;">LIST NHẠC
+                            MỞ Ô LẦN 1:</label>
+                        <select id="select-sound-step1"
+                            style="width:100%; padding:8px; background:#000; color:#fff; border:1px solid #555;">
+                            <option value="Mo_o_US.mp3">Mở ô US</option>
+                            <option value="Mo_o_Lan_1_VN_1.mp3">Mở ô lần 1 VN 1</option>
+                            <option value="Mo_o_Lan_1_VN_2.mp3">Mở ô lần 1 VN 2</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="color:var(--neon); font-size:0.8rem; display:block; margin-bottom:3px;">LIST NHẠC
+                            MỞ Ô LẦN 2:</label>
+                        <select id="select-sound-step2"
+                            style="width:100%; padding:8px; background:#000; color:#fff; border:1px solid #555;">
+                            <option value="Mo_o_Lan_2_VN_1.mp3">Mở ô lần 2 VN 1</option>
+                            <option value="Mo_o_Lan_2_VN_2.mp3">Mở ô lần 2 VN 2</option>
+                            <option value="none">Không có</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 5px; margin-top: 5px;">
+                        <button
+                            style="background: red; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
+                            onclick="triggerSound('Sai_US.mp3')">Sai US</button>
+                        <button
+                            style="background: red; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
+                            onclick="triggerSound('Sai_VN_1.mp3')">Sai VN 1</button>
+                        <button
+                            style="background: red; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
+                            onclick="triggerSound('Sai_VN_2.mp3')">Sai VN 2</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -617,12 +641,27 @@
             }).subscribe();
         };
 
-        async function triggerSound(fileName) {
-            // Thêm timestamp ngẫu nhiên để ép Realtime luôn nhận diện bản ghi thay đổi kể cả khi bấm trùng 1 nút liên tục
+        function triggerSound(fileName) {
+            if (!fileName || fileName === 'none') return;
+
+            // Thêm timestamp ngẫu nhiên để ép Realtime nhận diện thay đổi
             const soundSignal = fileName + "?t=" + Date.now();
-            const { error } = await db.from('wheel_game').update({ current_sound: soundSignal }).eq('id', 1);
-            if (error) console.error("Lỗi đồng bộ tín hiệu âm thanh:", error);
-            else console.log("Đã phát tín hiệu âm thanh thành công:", soundSignal);
+
+            // Bắn request lên Supabase mà KHÔNG dùng await để tránh block luồng chính
+            db.from('wheel_game')
+                .update({ current_sound: soundSignal })
+                .eq('id', 1)
+                .then(({ error }) => {
+                    if (error) console.error("Lỗi đồng bộ tín hiệu âm thanh:", error);
+                    else console.log("Đã phát tín hiệu âm thanh thành công:", soundSignal);
+                });
+        }
+
+        function triggerSelectedOpenWordSound() {
+            const selectElem = document.getElementById('select-sound-open-word');
+            if (selectElem && selectElem.value) {
+                triggerSound(selectElem.value);
+            }
         }
 
         function getCharFromCell(value) {
@@ -1029,6 +1068,7 @@
                 document.getElementById('st-puz').innerText = rawText;
                 console.log(`Đã gửi bảng: ${decodingPositions.length} ô giải mã tại vị trí [${decodingPositions.join(', ')}]`);
                 renderKeyboard();
+                triggerSelectedOpenWordSound();
             } else {
                 console.error('Lỗi sendToBoard:', error);
             }
@@ -1073,54 +1113,68 @@
 
             if (positions.length === 0 || !currentLayout) return;
 
-            const { data: row } = await db.from('wheel_game').select('marked_positions, revealed_positions, revealed_chars').eq('id', 1).maybeSingle();
+            // Lấy dữ liệu mới nhất từ DB
+            const { data: row } = await db.from('wheel_game').select('marked_positions, revealed_positions').eq('id', 1).maybeSingle();
 
             let marked = (row && row.marked_positions) ? row.marked_positions.split(',').filter(Boolean).map(Number) : [];
             let revPos = (row && row.revealed_positions) ? row.revealed_positions.split(',').filter(Boolean).map(Number) : [];
 
-            // Lấy danh sách chữ cái đã công khai trên DB
-            let currentRevealedChars = (row && row.revealed_chars) ? row.revealed_chars.split(',').filter(Boolean) : [];
-
             if (mode === 2) {
-                // Chỉ lật các ô đã được đánh dấu ở giai đoạn trước
                 positions = positions.filter(pos => marked.includes(pos));
                 if (positions.length === 0) return;
             }
 
+            const soundStep1 = document.getElementById('select-sound-step1')?.value;
+            const soundStep2 = document.getElementById('select-sound-step2')?.value;
+
             for (let i = 0; i < positions.length; i++) {
                 const pos = positions[i];
 
-                if (mode === 1) {
-                    // GIAI ĐOẠN 2: Đánh dấu ô (Chuyển ô sang màu xanh dương nhấp nháy trên bảng)
-                    if (!marked.includes(pos)) marked.push(pos);
-                    await db.from('wheel_game').update({ marked_positions: marked.join(',') }).eq('id', 1);
-                }
-                else {
-                    // GIAI ĐOẠN 3: Lật mở hiện chữ (Chỉ lật đúng vị trí chỉ định, không lật ô trùng chữ)
-                    const rc = positionToRC(pos);
-                    const ch = currentLayout[rc.r][rc.c];
-                    if (ch) {
-                        if (!revPos.includes(pos)) revPos.push(pos);
-                        marked = marked.filter(p => p !== pos);
+                try {
+                    if (mode === 1) {
+                        // --- MỞ LẦN 1 (ĐÁNH DẤU Ô) ---
+                        if (!marked.includes(pos)) marked.push(pos);
 
-                        // LOẠI BỎ logic đẩy chữ cái norm vào currentRevealedChars và loại bỏ cập nhật trường revealed_chars tại đây.
-                        // Điều này đảm bảo hệ thống dựa hoàn toàn vào vị trí (pos) trong revPos để hiển thị, tránh việc lật diện rộng các ô trùng chữ.
-
-                        // Đồng bộ lên Database -> Chỉ cập nhật mảng vị trí đánh dấu và vị trí đã mở công khai
                         await db.from('wheel_game').update({
-                            marked_positions: marked.join(','),
-                            revealed_positions: revPos.join(',')
+                            marked_positions: marked.join(',')
                         }).eq('id', 1);
+
+                        // Gửi tín hiệu nhạc (Không await để không kẹt luồng)
+                        if (soundStep1 && soundStep1 !== 'none') {
+                            triggerSound(soundStep1);
+                        }
                     }
+                    else if (mode === 2) {
+                        // --- MỞ LẦN 2 (LẬT CHỮ) ---
+                        const rc = positionToRC(pos);
+                        let cellVal = currentLayout[rc.r] ? currentLayout[rc.r][rc.c] : null;
+                        let ch = typeof getCharFromCell === 'function' ? getCharFromCell(cellVal) : cellVal;
+
+                        if (ch) {
+                            if (!revPos.includes(pos)) revPos.push(pos);
+                            marked = marked.filter(p => p !== pos);
+
+                            await db.from('wheel_game').update({
+                                marked_positions: marked.join(','),
+                                revealed_positions: revPos.join(',')
+                            }).eq('id', 1);
+
+                            // Gửi tín hiệu nhạc
+                            if (soundStep2 && soundStep2 !== 'none') {
+                                triggerSound(soundStep2);
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Lỗi xử lý tại ô ${pos}:`, err);
                 }
 
-                // Tạo khoảng trễ lật từng ô nếu có nhiều ô
+                // Chờ 1.2s trước khi mở ô tiếp theo (giúp hiệu ứng ô và tiếng chạy lần lượt)
                 if (i < positions.length - 1) {
                     await new Promise(r => setTimeout(r, 1200));
                 }
             }
 
-            // Xóa vị trí chờ sau khi quy trình hoàn tất
             await db.from('wheel_game').update({ pending_positions: '' }).eq('id', 1);
         }
 
