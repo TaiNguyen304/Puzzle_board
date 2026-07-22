@@ -388,6 +388,20 @@
             </select>
         </div>
 
+        <!-- KHU VỰC DÀNH CHO LIST CHỌN NHẠC GIẢI Ô CHỮ (DẠNG OPTION) -->
+        <div style="margin-top: 10px; margin-bottom: 10px;">
+            <label style="color:var(--pink); font-size:0.85rem; display:block; margin-bottom:5px;">LIST NHẠC GIẢI Ô CHỮ:</label>
+            <div style="display: flex; gap: 5px;">
+                <select id="select-sound-solve-puzzle"
+                    style="flex: 1; padding:8px; background:#000; color:var(--neon); border:1px solid var(--pink);">
+                    <option value="toss_up_solve.mp3">Đoán nhanh US</option>
+                    <option value="solve.mp3">Ô chữ US</option>
+                    <option value="solved 2001.mp3">Ô chữ VN 1</option>
+                    <option value="solved.mp3">Ô chữ VN 2</option>
+                    <option value="ClearPuzzle.mp3">Ô chữ VN 3</option>
+                </select>
+            </div>
+        </div>
         <div class="panel">
             <h3>3. BÀN PHÍM ĐIỀU KHIỂN</h3>
             <div id="keyboard" class="keyboard"></div>
@@ -1211,6 +1225,10 @@
 
         async function revealAll() {
             usedChars = [...VIETNAMESE_ALPHABET];
+            const solveSound = document.getElementById('select-sound-solve-puzzle')?.value;
+            if (solveSound) {
+                triggerSound(solveSound);
+            }
             await db.from('wheel_game').update({
                 revealed_chars: usedChars.join(','),
                 pending_positions: "",
