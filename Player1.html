@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
- 
+
 <head>
     <meta charset="UTF-8">
     <title>Player 1</title>
@@ -860,6 +860,32 @@
                 });
             });
         }
+
+        (async function checkAuth() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomId = urlParams.get('roomid');
+            const authKey = urlParams.get('auth'); // Mật khẩu người chơi nhập từ index.html
+
+            if (!roomId || !authKey) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                // Kiểm tra đúng cột pass_player1
+                const { data, error } = await db.from('wheel_game')
+                    .select('id')
+                    .eq('room_id', String(roomId))
+                    .eq('pass_player1', String(authKey))
+                    .maybeSingle();
+
+                if (error || !data) {
+                    window.location.href = 'index.html';
+                }
+            } catch (e) {
+                window.location.href = 'index.html';
+            }
+        })();
 
         // Gán sự kiện click nút chuông
         document.getElementById('buzzer-btn').addEventListener('click', pressBuzzer);

@@ -99,6 +99,24 @@
             font-size: 0.9rem;
             color: yellow;
         }
+
+        #no-roomid-msg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000000;
+            color: #ff0000;
+            font-size: 2rem;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999999;
+            text-align: center;
+            padding: 20px;
+        }
     </style>
 </head>
 
@@ -179,6 +197,14 @@
         var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGd0ZGRlcmthZXJnaWpodWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NjM5MzksImV4cCI6MjA5NDAzOTkzOX0._BOLe4xH5ZuhfXfsdS63eY9N12wyomq58GG0toi1aIE';
         var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomId = urlParams.get('roomid');
+
+        if (!roomId) {
+            document.body.innerHTML = '<div id="no-roomid-msg">Vui lòng nhập tham số ?roomid trên URL.</div>';
+            throw new Error("Thiếu tham số roomid trên URL");
+        }
+        
         async function triggerSound(soundName) {
             const statusEl = document.getElementById('status');
             statusEl.innerText = soundName === 'STOP' ? "Đang gửi lệnh dừng..." : `Đang kích hoạt: ${soundName}...`;

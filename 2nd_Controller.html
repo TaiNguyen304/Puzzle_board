@@ -251,12 +251,122 @@
         audio {
             display: none;
         }
+
+        /* Khung panel chính */
+        .room-panel {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: sans-serif;
+        }
+
+        /* Tiêu đề góc trên */
+        .room-title {
+            color: #ff00cc;
+            /* Màu hồng neon */
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        /* Nút TẠO PHÒNG màu đỏ */
+        .btn-create-room {
+            background-color: #ff0000;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 1rem;
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+        }
+
+        .btn-create-room:hover {
+            background-color: #ffa500;
+        }
+
+        /* Khung hiển thị thông tin nét đứt màu hồng */
+        .room-info-box {
+            border: 2px dashed #ff00cc;
+            background-color: #0b0b0b;
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+            /* Ẩn khi chưa bấm nút */
+        }
+
+        /* Thông báo ĐÃ TẠO PHÒNG THÀNH CÔNG! */
+        .status-text {
+            color: #f0c;
+            font-weight: bold;
+            font-size: 1.05rem;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        /* Các dòng thông tin chi tiết (Mã phòng, Player) */
+        .info-line {
+            font-size: 0.95rem;
+            font-weight: bold;
+            margin-top: 6px;
+            text-transform: uppercase;
+        }
+
+        .label-green {
+            color: #00ff00;
+            /* Màu xanh lá tươi */
+        }
+
+        .val-yellow {
+            color: #ffff00;
+            /* Màu vàng tươi cho mã phòng */
+        }
+
+        .val-white {
+            color: #ffffff;
+            /* Màu trắng cho mật khẩu */
+        }
     </style>
 </head>
 
 <body>
 
     <div class="left-col">
+        <div class="room-panel">
+            <div class="room-title">TẠO PHÒNG VÀ MẬT KHẨU</div>
+
+            <button class="btn-create-room" onclick="generateRoomAndPasswords()">TẠO PHÒNG</button>
+
+            <div id="room-info-display" class="room-info-box">
+                <div class="status-text">ĐÃ TẠO PHÒNG THÀNH CÔNG!</div>
+
+                <div class="info-line">
+                    <span class="label-green">MÃ PHÒNG:</span>
+                    <span id="room-id-val" class="val-yellow"></span>
+                </div>
+
+                <div class="info-line">
+                    <span class="label-green">PLAYER 1 MẬT KHẨU:</span>
+                    <span id="p1-pass-val" class="val-white"></span>
+                </div>
+
+                <div class="info-line">
+                    <span class="label-green">PLAYER 2 MẬT KHẨU:</span>
+                    <span id="p2-pass-val" class="val-white"></span>
+                </div>
+
+                <div class="info-line">
+                    <span class="label-green">PLAYER 3 MẬT KHẨU:</span>
+                    <span id="p3-pass-val" class="val-white"></span>
+                </div>
+            </div>
+        </div>
         <div class="panel">
             <h3>1. NHẬP DỮ LIỆU EXCEL</h3>
             <div class="excel-upload-wrapper">
@@ -390,7 +500,8 @@
 
         <!-- KHU VỰC DÀNH CHO LIST CHỌN NHẠC GIẢI Ô CHỮ (DẠNG OPTION) -->
         <div style="margin-top: 10px; margin-bottom: 10px;">
-            <label style="color:var(--pink); font-size:0.85rem; display:block; margin-bottom:5px;">LIST NHẠC GIẢI Ô CHỮ:</label>
+            <label style="color:var(--pink); font-size:0.85rem; display:block; margin-bottom:5px;">LIST NHẠC GIẢI Ô
+                CHỮ:</label>
             <div style="display: flex; gap: 5px;">
                 <select id="select-sound-solve-puzzle"
                     style="flex: 1; padding:8px; background:#000; color:var(--neon); border:1px solid var(--pink);">
@@ -441,14 +552,11 @@
                         </select>
                     </div>
                     <div style="display: flex; gap: 5px; margin-top: 5px;">
-                        <button
-                            style="background: red; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
+                        <button style="background: red; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
                             onclick="triggerSound('Sai_US.mp3')">Sai US</button>
-                        <button
-                            style="background: red; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
+                        <button style="background: red; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
                             onclick="triggerSound('Sai_VN_1.mp3')">Sai VN 1</button>
-                        <button
-                            style="background: red; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
+                        <button style="background: red; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
                             onclick="triggerSound('Sai_VN_2.mp3')">Sai VN 2</button>
                     </div>
                 </div>
@@ -520,6 +628,23 @@
                         style="background: #ffffff; color: #000; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
                         trắng</button>
                 </div>
+                <div style="margin-top: 5px; display: flex; gap: 5px;">
+                    <button onclick="multiplyScore('red', 1.5)"
+                        style="background: red; color: #fff; flex: 1; padding: 5px; font-size: 11px;">x1.5</button>
+                    <button onclick="multiplyScore('red', 2)"
+                        style="background: red; color: #fff; flex: 1; padding: 5px; font-size: 11px;">x2</button>
+                    <button onclick="multiplyScore('red', 0.5)"
+                        style="background: red; color: #fff; flex: 1; padding: 5px; font-size: 11px;">:2</button>
+                </div>
+                <!-- Các nút Reset vòng và Reset tổng cho NC ĐỎ -->
+                <div style="margin-top: 5px; display: flex; gap: 5px;">
+                    <button onclick="resetPlayerScore('red', 'round')"
+                        style="background: red; color: #fff; flex: 1; padding: 5px; font-size: 10px;">Reset
+                        vòng</button>
+                    <button onclick="resetPlayerScore('red', 'total')"
+                        style="background: red; color: #fff; flex: 1; padding: 5px; font-size: 10px;">Reset
+                        tổng</button>
+                </div>
             </div>
 
             <div class="player-panel"
@@ -557,6 +682,23 @@
                         style="background: #ffffff; color: #000; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
                         trắng</button>
                 </div>
+                <div style="margin-top: 5px; display: flex; gap: 5px;">
+                    <button onclick="multiplyScore('yellow', 1.5)"
+                        style="background: yellow; color: #000; flex: 1; padding: 5px; font-size: 11px;">x1.5</button>
+                    <button onclick="multiplyScore('yellow', 2)"
+                        style="background: yellow; color: #000; flex: 1; padding: 5px; font-size: 11px;">x2</button>
+                    <button onclick="multiplyScore('yellow', 0.5)"
+                        style="background: yellow; color: #000; flex: 1; padding: 5px; font-size: 11px;">:2</button>
+                </div>
+                <!-- Các nút Reset vòng và Reset tổng cho NC VÀNG -->
+                <div style="margin-top: 5px; display: flex; gap: 5px;">
+                    <button onclick="resetPlayerScore('yellow', 'round')"
+                        style="background: yellow; color: #000; flex: 1; padding: 5px; font-size: 10px;">Reset
+                        vòng</button>
+                    <button onclick="resetPlayerScore('yellow', 'total')"
+                        style="background: yellow; color: #000; flex: 1; padding: 5px; font-size: 10px;">Reset
+                        tổng</button>
+                </div>
             </div>
 
             <div class="player-panel"
@@ -593,6 +735,23 @@
                     <button onclick="updatePlayerLight('blue', 'white')"
                         style="background: #ffffff; color: #000; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
                         trắng</button>
+                </div>
+                <div style="margin-top: 5px; display: flex; gap: 5px;">
+                    <button onclick="multiplyScore('blue', 1.5)"
+                        style="background: blue; color: #fff; flex: 1; padding: 5px; font-size: 11px;">x1.5</button>
+                    <button onclick="multiplyScore('blue', 2)"
+                        style="background: blue; color: #fff; flex: 1; padding: 5px; font-size: 11px;">x2</button>
+                    <button onclick="multiplyScore('blue', 0.5)"
+                        style="background: blue; color: #fff; flex: 1; padding: 5px; font-size: 11px;">:2</button>
+                </div>
+                <!-- Các nút Reset vòng và Reset tổng cho NC XANH -->
+                <div style="margin-top: 5px; display: flex; gap: 5px;">
+                    <button onclick="resetPlayerScore('blue', 'round')"
+                        style="background: blue; color: #fff; flex: 1; padding: 5px; font-size: 10px;">Reset
+                        vòng</button>
+                    <button onclick="resetPlayerScore('blue', 'total')"
+                        style="background: blue; color: #fff; flex: 1; padding: 5px; font-size: 10px;">Reset
+                        tổng</button>
                 </div>
             </div>
 
@@ -1505,6 +1664,55 @@
             }
         }
 
+        async function generateRoomAndPasswords() {
+            // 1. Tạo ngẫu nhiên Mã phòng (6 chữ số) và 3 Mật khẩu (4 chữ số)
+            const roomId = String(Math.floor(100000 + Math.random() * 900000));
+            const passP1 = String(Math.floor(1000 + Math.random() * 9000));
+            const passP2 = String(Math.floor(1000 + Math.random() * 9000));
+            const passP3 = String(Math.floor(1000 + Math.random() * 9000));
+
+            // 2. Cập nhật mã phòng và mật khẩu lên Supabase (Đã sửa tên cột chính xác)
+            const { data, error } = await db.from('wheel_game').update({
+                room_id: roomId,
+                pass_player1: passP1,
+                pass_player2: passP2,
+                pass_player3: passP3
+            }).eq('id', 1);
+
+            // Xử lý lỗi
+            if (error) {
+                console.error("Lỗi Supabase:", error.message);
+                showPopup("Lỗi tạo phòng: " + error.message, true);
+                return;
+            }
+
+            // 3. Cập nhật giao diện sau khi lưu thành công
+            document.getElementById('room-id-val').innerText = roomId;
+            document.getElementById('p1-pass-val').innerText = passP1;
+            document.getElementById('p2-pass-val').innerText = passP2;
+            document.getElementById('p3-pass-val').innerText = passP3;
+
+            document.getElementById('room-info-display').style.display = 'block';
+
+            // Hiển thị thông báo thành công
+            showPopup("Tạo phòng thành công!");
+        }
+
+        async function multiplyScore(player, factor) {
+            if (scores[player]) {
+                scores[player].round = Math.round(scores[player].round * factor);
+                await syncScores();
+            }
+        }
+
+        // Hàm reset riêng điểm vòng hoặc điểm tổng của 1 người chơi
+        async function resetPlayerScore(player, type) {
+            if (scores[player] && (type === 'round' || type === 'total')) {
+                scores[player][type] = 0;
+                await syncScores();
+            }
+        }
+        
         document.addEventListener('contextmenu', e => e.preventDefault());
         document.addEventListener('keydown', e => {
             if (e.keyCode === 123) e.preventDefault();

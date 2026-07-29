@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Nhập Người Chơi</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            font-weight: bold !important;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: navy;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            overflow: hidden;
+        }
+
+        .login-card {
+            background: #1a0f30;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(128, 0, 128, 0.6);
+            border: 3px solid rgb(255, 0, 0);
+            width: 400px;
+            max-width: 90%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            text-align: center;
+        }
+
+        .login-title {
+            font-size: 2rem;
+            color: yellow;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 1rem;
+            color: #ff00cc;
+            text-shadow: 0 0 5px rgba(255, 0, 204, 0.5);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 2px solid purple;
+            background-color: #0d0618;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        input:focus, select:focus {
+            border-color: #39ff14;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
+        }
+
+        select option {
+            background-color: #1a0f30;
+            color: white;
+        }
+
+        .btn-submit {
+            margin-top: 10px;
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            border: none;
+            background-color: #0000ff;
+            color: #ffffff;
+            font-size: 1.2rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 255, 0.4);
+        }
+
+        .btn-submit:hover {
+            background-color: orange;
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(255, 165, 0, 0.6);
+        }
+
+        #error-msg {
+            color: #ff0000;
+            font-size: 0.95rem;
+            min-height: 22px;
+            text-shadow: 0 0 5px rgba(255, 51, 51, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="login-title">ĐĂNG NHẬP</div>
+        
+        <div class="form-group">
+            <label for="player-select">NGƯỜI CHƠI</label>
+            <select id="player-select">
+                <option value="Player 1">Player 1</option>
+                <option value="Player 2">Player 2</option>
+                <option value="Player 3">Player 3</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="room-id">MÃ PHÒNG</label>
+            <input type="text" id="room-id" placeholder="Nhập mã phòng...">
+        </div>
+
+        <div class="form-group">
+            <label for="password">MẬT KHẨU</label>
+            <input type="password" id="password" placeholder="Nhập mật khẩu...">
+        </div>
+
+        <div id="error-msg"></div>
+
+        <button class="btn-submit" id="submit-btn">XÁC NHẬN</button>
+    </div>
+
+    <script>
+        var SUPABASE_URL = 'https://tfdgtdderkaergijhucb.supabase.co';
+        var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGd0ZGRlcmthZXJnaWpodWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NjM5MzksImV4cCI6MjA5NDAzOTkzOX0._BOLe4xH5ZuhfXfsdS63eY9N12wyomq58GG0toi1aIE';
+        var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const errorMsg = document.getElementById('error-msg');
+
+        document.getElementById('submit-btn').addEventListener('click', async () => {
+            errorMsg.innerText = '';
+            
+            const player = document.getElementById('player-select').value;
+            const roomId = document.getElementById('room-id').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!roomId || !password) {
+                errorMsg.innerText = 'VUI LÒNG NHẬP ĐẦY ĐỦ MÃ PHÒNG VÀ MẬT KHẨU!';
+                return;
+            }
+
+            let passColumn = 'pass_player1';
+            let targetFile = 'Player1.html';
+
+            if (player === 'Player 2') {
+                passColumn = 'pass_player2';
+                targetFile = 'Player2.html';
+            } else if (player === 'Player 3') {
+                passColumn = 'pass_player3';
+                targetFile = 'Player3.html';
+            }
+
+            try {
+                // 1. Tìm phòng theo room_id (Thử cả chuỗi và số)
+                let { data: roomData, error: roomError } = await db
+                    .from('wheel_game')
+                    .select('*')
+                    .eq('room_id', roomId);
+
+                if ((!roomData || roomData.length === 0) && !isNaN(roomId)) {
+                    const numQuery = await db.from('wheel_game')
+                        .select('*')
+                        .eq('room_id', Number(roomId));
+                    if (!numQuery.error && numQuery.data && numQuery.data.length > 0) {
+                        roomData = numQuery.data;
+                        roomError = null;
+                    }
+                }
+
+                if (roomError) {
+                    console.error("Lỗi Supabase:", roomError);
+                    errorMsg.innerText = 'CÓ LỖI XẢY RA KHI KẾT NỐI!';
+                    return;
+                }
+
+                if (!roomData || roomData.length === 0) {
+                    errorMsg.innerText = 'MÃ PHÒNG KHÔNG TỒN TẠI!';
+                    return;
+                }
+
+                // 2. So sánh mật khẩu
+                const room = roomData[0];
+                const dbPassword = room[passColumn];
+
+                if (dbPassword === null || dbPassword === undefined || String(dbPassword).trim() !== password) {
+                    errorMsg.innerText = 'SAI MẬT KHẨU!';
+                    return;
+                }
+
+                // 3. Chuyển hướng thành công
+                // Truyền thêm player ID để trang Player dễ nhận diện nếu cần
+                window.location.href = `${targetFile}?roomid=${encodeURIComponent(roomId)}&auth=${encodeURIComponent(password)}`;
+
+            } catch (err) {
+                console.error(err);
+                errorMsg.innerText = 'KHÔNG THỂ KẾT NỐI ĐẾN MÁY CHỦ!';
+            }
+        });
+
+        // Hỗ trợ nhấn phím Enter để xác nhận
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('submit-btn').click();
+            }
+        });
+    </script>
+</body>
+</html>
