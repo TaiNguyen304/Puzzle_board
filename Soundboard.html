@@ -162,6 +162,11 @@
             document.body.innerHTML = '<div id="no-roomid-msg">Vui lòng nhập tham số ?roomid trên URL.</div>';
             throw new Error("Thiếu tham số roomid trên URL");
         }
+
+        function getRoomFilterValue(value = roomId) {
+            const normalized = value == null ? "" : String(value).trim();
+            return /^\d+$/.test(normalized) ? Number(normalized) : normalized;
+        }
         
         async function triggerSound(soundName) {
             const statusEl = document.getElementById('status');
@@ -173,7 +178,7 @@
             const { error } = await db
                 .from('wheel_game')
                 .update({ current_sound: uniqueSignal })
-                .eq('id', 1);
+                .eq('room_id', getRoomFilterValue());
 
             if (error) {
                 console.error("Lỗi gửi âm thanh:", error);

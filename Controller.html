@@ -254,6 +254,8 @@
 
         /* Khung panel chính */
         .room-panel {
+            position: relative;
+            z-index: 60;
             background-color: #1a1a1a;
             border: 1px solid #333;
             padding: 15px;
@@ -332,10 +334,34 @@
             color: #ffffff;
             /* Màu trắng cho mật khẩu */
         }
+
+        #lockOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.88);
+            z-index: 50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+        #lockOverlay .lock-msg { color: #ff00cc; font-size: 1.5rem; text-transform: uppercase; margin: 0; }
+        #lockOverlay .lock-sub { color: #fff; font-size: 0.9rem; margin-top: 12px; }
     </style>
 </head>
 
 <body>
+
+    <div id="lockOverlay">
+        <div>
+            <p class="lock-msg">VUI LÒNG BẤM TẠO PHÒNG ĐỂ BẮT ĐẦU</p>
+            <p class="lock-sub">Tất cả chức năng sẽ bị khóa cho đến khi tạo phòng.</p>
+        </div>
+    </div>
 
     <div class="left-col">
         <div class="room-panel">
@@ -788,19 +814,22 @@
         let countdownValue = 45;
         let scores = { red: { total: 0, round: 0 }, yellow: { total: 0, round: 0 }, blue: { total: 0, round: 0 } };
         let specialRoundCatIndex = 0;
+        let currentRoomId = null;
 
         const BLOCK_STARTS_12 = [3, 18, 33];
         const BLOCK_STARTS_14 = [2, 17, 32];
         let lastBuzzerState = 0;
 
         window.onload = async () => {
-            await loadCurrentState();
             renderKeyboard();
+        };
 
+        function setupRealtime() {
             db.channel('controller_buzz').on('postgres_changes', {
                 event: 'UPDATE',
                 schema: 'public',
-                table: 'wheel_game'
+                table: 'wheel_game',
+                filter: 'room_id=eq.' + currentRoomId
             }, payload => {
                 const newData = payload.new;
                 if (!('buzzer_player' in newData)) return;
@@ -815,7 +844,7 @@
                 }
                 lastBuzzerState = bp;
             }).subscribe();
-        };
+        }
 
         function triggerSound(fileName) {
             if (!fileName || fileName === 'none') return;
@@ -826,7 +855,7 @@
             // Bắn request lên Supabase mà KHÔNG dùng await để tránh block luồng chính
             db.from('wheel_game')
                 .update({ current_sound: soundSignal })
-                .eq('id', 1)
+                .eq('room_id', currentRoomId)
                 .then(({ error }) => {
                     if (error) console.error("Lỗi đồng bộ tín hiệu âm thanh:", error);
                     else console.log("Đã phát tín hiệu âm thanh thành công:", soundSignal);
@@ -998,7 +1027,7 @@
         }
 
         async function loadCurrentState() {
-            const { data, error } = await db.from('wheel_game').select('*').eq('id', 1).maybeSingle();
+            const { data, error } = await db.from('wheel_game').select('*').eq('room_id', currentRoomId).maybeSingle();
             if (data) {
                 scores.red.total = data.score_red_total || 0;
                 scores.red.round = data.score_red_round || 0;
@@ -1236,7 +1265,7 @@
                 board_layout: JSON.stringify(layout),
                 decoding_positions: decodingPositions.join(','),
                 is_full_reveal: false
-            }).eq('id', 1);
+            }).eq('room_id', currentRoomId);
 
             if (!error) {
                 document.getElementById('st-round').innerText = selectedRoundName;
@@ -1290,7 +1319,7 @@
             if (positions.length === 0 || !currentLayout) return;
 
             // Lấy dữ liệu mới nhất từ DB
-            const { data: row } = await db.from('wheel_game').select('marked_positions, revealed_positions').eq('id', 1).maybeSingle();
+            const { data: row } = await db.from('wheel_game').select('marked_positions, revealed_positions').eq('room_id', currentRoomId).maybeSingle();
 
             let marked = (row && row.marked_positions) ? row.marked_positions.split(',').filter(Boolean).map(Number) : [];
             let revPos = (row && row.revealed_positions) ? row.revealed_positions.split(',').filter(Boolean).map(Number) : [];
@@ -1313,7 +1342,7 @@
 
                         await db.from('wheel_game').update({
                             marked_positions: marked.join(',')
-                        }).eq('id', 1);
+                        }).eq('room_id', currentRoomId);
 
                         // Gửi tín hiệu nhạc (Không await để không kẹt luồng)
                         if (soundStep1 && soundStep1 !== 'none') {
@@ -1333,7 +1362,7 @@
                             await db.from('wheel_game').update({
                                 marked_positions: marked.join(','),
                                 revealed_positions: revPos.join(',')
-                            }).eq('id', 1);
+                            }).eq('room_id', currentRoomId);
 
                             // Gửi tín hiệu nhạc
                             if (soundStep2 && soundStep2 !== 'none') {
@@ -1351,7 +1380,7 @@
                 }
             }
 
-            await db.from('wheel_game').update({ pending_positions: '' }).eq('id', 1);
+            await db.from('wheel_game').update({ pending_positions: '' }).eq('room_id', currentRoomId);
         }
 
         async function quickStart() {
@@ -1365,7 +1394,7 @@
                     is_buzzer_locked: false,
                     buzzer_player: "",
                     border_color: 'rgb(128,0,128)'
-                }).eq('id', 1);
+                }).eq('room_id', currentRoomId);
                 usedChars = [];
                 renderKeyboard();
 
@@ -1376,7 +1405,7 @@
                 }, 1500);
             } else {
                 usedChars = [];
-                await db.from('wheel_game').update({ revealed_chars: "", pending_positions: "" }).eq('id', 1);
+                await db.from('wheel_game').update({ revealed_chars: "", pending_positions: "" }).eq('room_id', currentRoomId);
                 quickResume();
             }
         }
@@ -1395,13 +1424,13 @@
                     is_buzzer_locked: false,
                     buzzer_player: "",
                     border_color: 'rgb(128,0,128)'
-                }).eq('id', 1);
+                }).eq('room_id', currentRoomId);
 
                 startCountdown();
             }
 
             quickInterval = setInterval(async () => {
-                const { data } = await db.from('wheel_game').select('revealed_positions').eq('id', 1).single();
+                const { data } = await db.from('wheel_game').select('revealed_positions').eq('room_id', currentRoomId).single();
                 let revPos = data.revealed_positions ? data.revealed_positions.split(',').map(Number) : [];
 
                 let availablePositions = [];
@@ -1427,7 +1456,7 @@
 
                 await db.from('wheel_game').update({
                     revealed_positions: revPos.join(',')
-                }).eq('id', 1);
+                }).eq('room_id', currentRoomId);
 
             }, 700);
         }
@@ -1444,9 +1473,9 @@
                         await db.from('wheel_game').update({
                             timer: 0,
                             is_buzzer_locked: true
-                        }).eq('id', 1);
+                        }).eq('room_id', currentRoomId);
                     } else {
-                        await db.from('wheel_game').update({ timer: countdownValue }).eq('id', 1);
+                        await db.from('wheel_game').update({ timer: countdownValue }).eq('room_id', currentRoomId);
                     }
                 } else {
                     clearInterval(countdownInterval);
@@ -1462,14 +1491,14 @@
             countdownValue = 45;
             document.getElementById('st-timer').innerText = countdownValue;
             stopCountdown();
-            await db.from('wheel_game').update({ timer: countdownValue }).eq('id', 1);
+            await db.from('wheel_game').update({ timer: countdownValue }).eq('room_id', currentRoomId);
         }
 
         async function setTimer(seconds) {
             countdownValue = seconds;
             document.getElementById('st-timer').innerText = countdownValue;
             stopCountdown();
-            await db.from('wheel_game').update({ timer: countdownValue }).eq('id', 1);
+            await db.from('wheel_game').update({ timer: countdownValue }).eq('room_id', currentRoomId);
             startCountdown();
         }
 
@@ -1501,7 +1530,7 @@
             if (selectedRoundName.includes('ĐB5.')) {
                 if (foundPositions.length === 0) return;
 
-                const { data: row } = await db.from('wheel_game').select('revealed_positions, marked_positions').eq('id', 1).maybeSingle();
+                const { data: row } = await db.from('wheel_game').select('revealed_positions, marked_positions').eq('room_id', currentRoomId).maybeSingle();
                 let revPos = (row && row.revealed_positions) ? row.revealed_positions.split(',').filter(Boolean).map(Number) : [];
                 let marked = (row && row.marked_positions) ? row.marked_positions.split(',').filter(Boolean).map(Number) : [];
 
@@ -1520,7 +1549,7 @@
                     marked_positions: marked.join(','),
                     pending_positions: '',
                     revealed_chars: usedChars.join(',')
-                }).eq('id', 1);
+                }).eq('room_id', currentRoomId);
 
                 document.getElementById('numPos').value = "";
                 generatePosInputs();
@@ -1544,7 +1573,7 @@
                 pending_positions: "",
                 is_full_reveal: true,
                 decoding_positions: decodingPositions.join(',')
-            }).eq('id', 1);
+            }).eq('room_id', currentRoomId);
 
             renderKeyboard();
         }
@@ -1560,7 +1589,7 @@
                 decoding_positions: "",
                 revealed_chars: '',
                 border_color: 'rgb(128,0,128)'
-            }).eq('id', 1);
+            }).eq('room_id', currentRoomId);
             usedChars = []; currentLayout = null; currentPuzzleRaw = "";
             document.getElementById('st-puz').innerText = "-";
             document.getElementById('st-cat').innerText = "-";
@@ -1571,7 +1600,7 @@
             if (!usedChars.includes(char)) {
                 let positions = [];
                 // Lấy danh sách ô đã được mở công khai từ trước để tránh dò đè lên
-                const { data: row } = await db.from('wheel_game').select('revealed_positions').eq('id', 1).maybeSingle();
+                const { data: row } = await db.from('wheel_game').select('revealed_positions').eq('room_id', currentRoomId).maybeSingle();
                 let revPos = (row && row.revealed_positions) ? row.revealed_positions.split(',').filter(Boolean).map(Number) : [];
 
                 if (currentLayout) {
@@ -1633,7 +1662,7 @@
                     await db.from('wheel_game').update({
                         pending_positions: positions.join(','),
                         revealed_chars: usedChars.join(',') // <--- THÊM DÒNG NÀY ĐỂ BÁO HOST ẨN PHÍM
-                    }).eq('id', 1);
+                    }).eq('room_id', currentRoomId);
                 } else {
                     // Nếu chữ không xuất hiện, reset lại các input ô vị trí về trống
                     document.getElementById('numPos').value = "";
@@ -1643,7 +1672,7 @@
                     await db.from('wheel_game').update({
                         pending_positions: '',
                         revealed_chars: usedChars.join(',') // <--- THÊM DÒNG NÀY ĐỂ BÁO HOST ẨN PHÍM KỂ CẢ KHI ĐOÁN SAI
-                    }).eq('id', 1);
+                    }).eq('room_id', currentRoomId);
                 }
 
                 // Cập nhật lại giao diện bàn phím của Controller để chuyển trạng thái nút vừa nhấn (ví dụ: đổi màu/vô hiệu hóa)
@@ -1671,26 +1700,26 @@
         }
         function closePopup() { document.getElementById('mainModal').style.display = 'none'; }
 
-        async function changeBorderColor(color) { await db.from('wheel_game').update({ border_color: color }).eq('id', 1); }
+        async function changeBorderColor(color) { await db.from('wheel_game').update({ border_color: color }).eq('room_id', currentRoomId); }
 
         async function openBuzzer() {
             await db.from('wheel_game').update({
                 is_buzzer_locked: false,
                 buzzer_player: ""
-            }).eq('id', 1);
+            }).eq('room_id', currentRoomId);
             await changeBorderColor('rgb(128,0,128)');
         }
 
         async function lockBuzzer() {
             await db.from('wheel_game').update({
                 is_buzzer_locked: true
-            }).eq('id', 1);
+            }).eq('room_id', currentRoomId);
         }
 
         async function resetBuzzer() {
             const { data: currentGame } = await db.from('wheel_game')
                 .select('is_buzzer_locked')
-                .eq('id', 1)
+                .eq('room_id', currentRoomId)
                 .single();
 
             const currentLockStatus = currentGame ? currentGame.is_buzzer_locked : false;
@@ -1699,7 +1728,7 @@
                 buzzer_player: "",
                 is_buzzer_locked: currentLockStatus,
                 border_color: 'rgb(128,0,128)'
-            }).eq('id', 1);
+            }).eq('room_id', currentRoomId);
 
             if (error) {
                 console.error("Lỗi khi reset chuông:", error);
@@ -1739,7 +1768,7 @@
                 score_red_total: scores.red.total, score_red_round: scores.red.round,
                 score_yellow_total: scores.yellow.total, score_yellow_round: scores.yellow.round,
                 score_blue_total: scores.blue.total, score_blue_round: scores.blue.round
-            }).eq('id', 1);
+            }).eq('room_id', currentRoomId);
             updateScoreUI();
         }
         function updateScoreUI() {
@@ -1749,7 +1778,7 @@
             });
         }
         async function toggleDisplayScore(mode) {
-            await db.from('wheel_game').update({ score_display_mode: mode }).eq('id', 1);
+            await db.from('wheel_game').update({ score_display_mode: mode }).eq('room_id', currentRoomId);
         }
 
         function processSpecialGuesses() {
@@ -1788,7 +1817,7 @@
 
         async function fillPositionsToController(positions) {
             if (positions.length === 0) {
-                await db.from('wheel_game').update({ pending_positions: '' }).eq('id', 1);
+                await db.from('wheel_game').update({ pending_positions: '' }).eq('room_id', currentRoomId);
                 return;
             }
 
@@ -1806,7 +1835,7 @@
 
             await db.from('wheel_game').update({
                 pending_positions: positions.join(',')
-            }).eq('id', 1);
+            }).eq('room_id', currentRoomId);
         }
 
         function removeVietnameseTones(str) {
@@ -1844,7 +1873,7 @@
 
             const { error } = await db.from('wheel_game')
                 .update(updateData)
-                .eq('id', 1);
+                .eq('room_id', currentRoomId);
 
             if (error) {
                 console.error("Lỗi cập nhật trạng thái đèn:", error);
@@ -1874,7 +1903,7 @@
             }
 
             // Lấy dữ liệu các ô đã lật sẵn trên DB hiện tại để gộp vào
-            const { data } = await db.from('wheel_game').select('revealed_positions').eq('id', 1).single();
+            const { data } = await db.from('wheel_game').select('revealed_positions').eq('room_id', currentRoomId).single();
             let currentRev = data && data.revealed_positions ? data.revealed_positions.split(',').filter(Boolean).map(Number) : [];
 
             // Trộn chung danh sách ô giải mã vào danh sách lật chữ công khai
@@ -1884,7 +1913,7 @@
 
             await db.from('wheel_game').update({
                 revealed_positions: currentRev.join(',')
-            }).eq('id', 1);
+            }).eq('room_id', currentRoomId);
         }
 
         async function generateRoomAndPasswords() {
@@ -1895,17 +1924,18 @@
             const passP3 = String(Math.floor(1000 + Math.random() * 9000));
 
             // 2. Cập nhật mã phòng và mật khẩu lên Supabase (Đã sửa tên cột chính xác)
-            const { data, error } = await db.from('wheel_game').update({
+            const { data, error } = await db.from('wheel_game').insert({
+                id: Date.now(),
                 room_id: roomId,
                 pass_player1: passP1,
                 pass_player2: passP2,
                 pass_player3: passP3
-            }).eq('id', 1);
+            }).select();
 
             // Xử lý lỗi
             if (error) {
                 console.error("Lỗi Supabase:", error.message);
-                showPopup("Lỗi tạo phòng: " + error.message, true);
+                showPopup("Lỗi", "Lỗi tạo phòng: " + error.message);
                 return;
             }
 
@@ -1916,9 +1946,13 @@
             document.getElementById('p3-pass-val').innerText = passP3;
 
             document.getElementById('room-info-display').style.display = 'block';
+            document.getElementById('lockOverlay').style.display = 'none';
 
-            // Hiển thị thông báo thành công
-            showPopup("Tạo phòng thành công!");
+            currentRoomId = roomId;
+            await loadCurrentState();
+            setupRealtime();
+
+            showPopup("Tạo phòng", "Đã tạo phòng thành công!");
         }
 
         async function multiplyScore(player, factor) {

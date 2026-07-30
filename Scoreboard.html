@@ -104,6 +104,11 @@
             window.onload = null;
             throw new Error("Thiếu tham số roomid trên URL");
         }
+
+        function getRoomFilterValue(value = roomId) {
+            const normalized = value == null ? "" : String(value).trim();
+            return /^\d+$/.test(normalized) ? Number(normalized) : normalized;
+        }
         
         function formatScore(num) {
             return (num || 0).toLocaleString('vi-VN');
@@ -123,7 +128,7 @@
             };
 
             // Get initial data
-            const { data } = await db.from('wheel_game').select('*').eq('id', 1).maybeSingle();
+            const { data } = await db.from('wheel_game').select('*').eq('room_id', getRoomFilterValue()).maybeSingle();
             if (data) {
                 updateScores(data);
             }
@@ -132,7 +137,8 @@
             db.channel('scoreboard').on('postgres_changes', {
                 event: 'UPDATE',
                 schema: 'public',
-                table: 'wheel_game'
+                table: 'wheel_game',
+                filter: `room_id=eq.${encodeURIComponent(String(roomId))}`
             }, payload => {
                 const newData = payload.new;
                 updateScores(newData);

@@ -506,6 +506,11 @@
             window.onload = null;
             throw new Error("Thiếu tham số roomid trên URL");
         }
+
+        function getRoomFilterValue(value = roomId) {
+            const normalized = value == null ? "" : String(value).trim();
+            return /^\d+$/.test(normalized) ? Number(normalized) : normalized;
+        }
         
         const VIETNAMESE_ALPHABET = "AĂÂBCDĐEÊGHIKLMNOÔƠPQRSTUƯVXY".split('');
 
@@ -968,7 +973,7 @@
             createBoard();
             renderKeyboardStatus([]);
 
-            const { data } = await db.from('wheel_game').select('*').eq('id', 1).maybeSingle();
+            const { data } = await db.from('wheel_game').select('*').eq('room_id', getRoomFilterValue()).maybeSingle();
             if (data) {
                 if ('buzzer_player' in data) lastBuzzerState = data.buzzer_player;
 
@@ -984,7 +989,8 @@
             db.channel('host_share').on('postgres_changes', {
                 event: 'UPDATE',
                 schema: 'public',
-                table: 'wheel_game'
+                table: 'wheel_game',
+                filter: `room_id=eq.${encodeURIComponent(String(roomId))}`
             }, payload => {
                 const newData = payload.new;
 
@@ -1014,7 +1020,7 @@
             // Poll timer every second to ensure synchronization
             setInterval(async () => {
                 try {
-                    const { data } = await db.from('wheel_game').select('timer').eq('id', 1).maybeSingle();
+                    const { data } = await db.from('wheel_game').select('timer').eq('room_id', getRoomFilterValue()).maybeSingle();
                     if (data) {
                         const timerDisplay = document.getElementById('host-timer');
                         if (timerDisplay) {

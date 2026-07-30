@@ -347,6 +347,14 @@
         var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGd0ZGRlcmthZXJnaWpodWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NjM5MzksImV4cCI6MjA5NDAzOTkzOX0._BOLe4xH5ZuhfXfsdS63eY9N12wyomq58GG0toi1aIE';
         var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomId = urlParams.get('roomid');
+        const authKey = urlParams.get('auth');
+
+        function getRoomFilterValue(value = roomId) {
+            const normalized = value == null ? "" : String(value).trim();
+            return /^\d+$/.test(normalized) ? Number(normalized) : normalized;
+        }
         // Biến trạng thái âm thanh toàn cục
         let audioContextUnlocked = false;
         const globalAudio = document.getElementById('globalSound');
@@ -635,7 +643,7 @@
                     buzzer_player: PLAYER_ID, // Ví dụ: 'red'
                     border_color: pColor      // Màu viền tương ứng
                 })
-                .eq('id', 1)
+                .eq('room_id', getRoomFilterValue())
                 // Chấp nhận bấm nếu buzzer_player đang trống (NULL hoặc "")
                 .or('buzzer_player.is.null,buzzer_player.eq.""')
                 .select();
@@ -648,7 +656,7 @@
                 const uniqueBuzzerSignal = 'buzzer.mp3?' + Date.now();
                 await db.from('wheel_game')
                     .update({ current_sound: uniqueBuzzerSignal })
-                    .eq('id', 1);
+                    .eq('room_id', getRoomFilterValue());
             }
         }
 
@@ -672,7 +680,7 @@
             createBoard();
 
             // Lấy dữ liệu ban đầu khi vừa load trang
-            const { data } = await db.from('wheel_game').select('*').eq('id', 1).maybeSingle();
+            const { data } = await db.from('wheel_game').select('*').eq('room_id', getRoomFilterValue()).maybeSingle();
             if (data) {
                 const revealed = data.revealed_chars ? data.revealed_chars.split(',').map(s => s.trim()).filter(Boolean) : [];
                 const layoutData = parseBoardLayout(data.board_layout);
@@ -714,7 +722,8 @@
             db.channel('any').on('postgres_changes', {
                 event: 'UPDATE',
                 schema: 'public',
-                table: 'wheel_game'
+                table: 'wheel_game',
+                filter: `room_id=eq.${encodeURIComponent(String(roomId))}`
             }, payload => {
                 const newData = payload.new;
 
@@ -801,7 +810,7 @@
             // Poll timer every second to ensure synchronization
             setInterval(async () => {
                 try {
-                    const { data } = await db.from('wheel_game').select('timer').eq('id', 1).maybeSingle();
+                    const { data } = await db.from('wheel_game').select('timer').eq('room_id', getRoomFilterValue()).maybeSingle();
                     if (data) {
                         const timerDisplay = document.getElementById('player1-timer');
                         if (timerDisplay) {

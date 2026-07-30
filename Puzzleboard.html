@@ -242,6 +242,11 @@
             window.onload = null; // Chặn khởi chạy sự kiện onload
             throw new Error("Thiếu tham số roomid trên URL");
         }
+
+        function getRoomFilterValue(value = roomId) {
+            const normalized = value == null ? "" : String(value).trim();
+            return /^\d+$/.test(normalized) ? Number(normalized) : normalized;
+        }
         
         let currentLayout = [];
         let boardStateCache = {
@@ -542,7 +547,7 @@
         }
 
         async function fetchState() {
-            const { data, error } = await db.from('wheel_game').select('*').eq('id', 1).single();
+            const { data, error } = await db.from('wheel_game').select('*').eq('room_id', getRoomFilterValue()).single();
             if (error) {
                 console.error("Lỗi fetch:", error);
                 return;
@@ -592,7 +597,7 @@
             await fetchState();
 
             db.channel('puzzle_realtime')
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'wheel_game', filter: 'id=eq.1' }, payload => {
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'wheel_game', filter: `room_id=eq.${encodeURIComponent(String(roomId))}` }, payload => {
                     const data = payload.new;
 
                     // Theo dõi Realtime tín hiệu âm thanh mới từ Soundboard đổ về
