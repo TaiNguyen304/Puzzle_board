@@ -350,6 +350,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const roomId = urlParams.get('roomid');
         const authKey = urlParams.get('auth');
+        const activeAudios = [];
 
         function getRoomFilterValue(value = roomId) {
             const normalized = value == null ? "" : String(value).trim();
@@ -377,22 +378,41 @@
         // Hàm nhận xử lý tín hiệu âm thanh trực tiếp từ Supabase Realtime
         function handleSoundSync(soundSignal) {
             if (!soundSignal) return;
+
             if (soundSignal === lastPlayedSignal) return;
             lastPlayedSignal = soundSignal;
 
             const soundFile = soundSignal.split('?')[0];
 
             if (soundFile === 'STOP') {
-                globalAudio.pause();
-                globalAudio.currentTime = 0;
-            } else if (soundFile === 'buzzer.mp3') {
+                // Dừng tất cả âm thanh đang phát cùng lúc
+                activeAudios.forEach(audio => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                });
+                activeAudios.length = 0;
+
+                if (typeof globalAudio !== 'undefined' && globalAudio) {
+                    globalAudio.pause();
+                    globalAudio.currentTime = 0;
+                }
+            }
+            else if (soundFile === 'buzzer.mp3') {
                 buzzerAudio.currentTime = 0;
-                buzzerAudio.play().catch(err => console.warn("Trình duyệt chặn tiếng chuông bấm.", err));
-            } else {
-                console.log("Đang phát file âm thanh đồng bộ:", soundFile);
-                globalAudio.src = soundFile;
-                globalAudio.currentTime = 0;
-                globalAudio.play().catch(err => console.warn("Trình duyệt chặn phát nhạc tự động.", err));
+                buzzerAudio.play().catch(err => console.warn(err));
+            }
+            else {
+                // Tạo đối tượng Audio mới cho mỗi âm thanh để phát đè/phát song song nhiều âm thanh cùng lúc
+                const audio = new Audio(soundFile);
+                activeAudios.push(audio);
+
+                // Tự động xóa khỏi danh sách sau khi âm thanh kết thúc
+                audio.onended = () => {
+                    const index = activeAudios.indexOf(audio);
+                    if (index > -1) activeAudios.splice(index, 1);
+                };
+
+                audio.play().catch(err => console.warn("Trình duyệt chặn phát âm thanh tự động:", err));
             }
         }
 

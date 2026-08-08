@@ -236,6 +236,7 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const roomId = urlParams.get('roomid');
+        const activeAudios = [];
 
         if (!roomId) {
             document.body.innerHTML = '<div id="no-roomid-msg">Vui lòng nhập tham số ?roomid trên URL.</div>';
@@ -297,39 +298,40 @@
         function handleSoundSync(soundSignal) {
             if (!soundSignal) return;
 
-            // Nếu trùng vết tín hiệu cũ đang lưu thì bỏ qua không xử lý
             if (soundSignal === lastPlayedSignal) return;
             lastPlayedSignal = soundSignal;
 
-            // Tách chuỗi lấy tên file thực tế (Ví dụ: "buzzer.mp3" hoặc "intro.mp3")
             const soundFile = soundSignal.split('?')[0];
 
             if (soundFile === 'STOP') {
-                globalAudio.pause();
-                globalAudio.currentTime = 0;
-                console.log("Đã dừng âm thanh theo lệnh từ Soundboard.");
-            }
-            // XỬ LÝ TIẾNG CHUÔNG NGƯỜI CHƠI BẤM: Phát độc lập qua buzzerAudio để không làm ngắt nhạc nền lớn
-            else if (soundFile === 'buzzer.mp3') {
-                console.log("Phát hiện có người chơi bấm chuông!");
-                buzzerAudio.currentTime = 0;
-                buzzerAudio.play().catch(err => {
-                    console.warn("Trình duyệt chặn chuông. Đảm bảo đã click một điểm trên Puzzleboard trước!", err);
+                // Dừng tất cả âm thanh đang phát cùng lúc
+                activeAudios.forEach(audio => {
+                    audio.pause();
+                    audio.currentTime = 0;
                 });
-            }
-            // XỬ LÝ CÁC PHÁT ÂM THANH KHÁC TỪ SOUNDBOARD
-            else {
-                console.log("Tín hiệu hợp lệ! Bắt đầu nạp và phát file âm thanh từ Soundboard:", soundFile);
+                activeAudios.length = 0;
 
-                globalAudio.src = soundFile;
-                globalAudio.currentTime = 0;
-
-                const playPromise = globalAudio.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(err => {
-                        console.warn("Trình duyệt từ chối phát nhạc. Đảm bảo đã click một điểm trên Puzzleboard trước!", err);
-                    });
+                if (typeof globalAudio !== 'undefined' && globalAudio) {
+                    globalAudio.pause();
+                    globalAudio.currentTime = 0;
                 }
+            }
+            else if (soundFile === 'buzzer.mp3') {
+                buzzerAudio.currentTime = 0;
+                buzzerAudio.play().catch(err => console.warn(err));
+            }
+            else {
+                // Tạo đối tượng Audio mới cho mỗi âm thanh để phát đè/phát song song nhiều âm thanh cùng lúc
+                const audio = new Audio(soundFile);
+                activeAudios.push(audio);
+
+                // Tự động xóa khỏi danh sách sau khi âm thanh kết thúc
+                audio.onended = () => {
+                    const index = activeAudios.indexOf(audio);
+                    if (index > -1) activeAudios.splice(index, 1);
+                };
+
+                audio.play().catch(err => console.warn("Trình duyệt chặn phát âm thanh tự động:", err));
             }
         }
 

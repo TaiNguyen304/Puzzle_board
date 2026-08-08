@@ -349,8 +349,19 @@
             text-align: center;
             padding: 20px;
         }
-        #lockOverlay .lock-msg { color: #ff00cc; font-size: 1.5rem; text-transform: uppercase; margin: 0; }
-        #lockOverlay .lock-sub { color: #fff; font-size: 0.9rem; margin-top: 12px; }
+
+        #lockOverlay .lock-msg {
+            color: #ff00cc;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            margin: 0;
+        }
+
+        #lockOverlay .lock-sub {
+            color: #fff;
+            font-size: 0.9rem;
+            margin-top: 12px;
+        }
     </style>
 </head>
 
@@ -498,11 +509,38 @@
                 </div>
             </div>
 
+            <!-- BỔ SUNG OPTION CHỌN NHẠC 30S & 10S -->
+            <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                <div>
+                    <label style="color:var(--neon); font-size:0.75rem; display:block; margin-bottom:3px;">OPTION CHỌN
+                        NHẠC 30S:</label>
+                    <select id="select-sound-30s"
+                        style="width:100%; padding:6px; background:#000; color:#fff; border:1px solid #555;">
+                        <option value="30s_vđb_2005.wav">Nhạc 30s VN 1</option>
+                        <option value="30s.mp3">Nhạc 30s VN 2</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="color:var(--neon); font-size:0.75rem; display:block; margin-bottom:3px;">OPTION CHỌN
+                        NHẠC 10S:</label>
+                    <select id="select-sound-10s"
+                        style="width:100%; padding:6px; background:#000; color:#fff; border:1px solid #555;">
+                        <option value="think.mp3">Nhạc 10s VN 1</option>
+                        <option value="10s_2.mp3">Nhạc 10s VN 2</option>
+                        <option value="10s.mp3">Nhạc 10s US</option>
+                    </select>
+                </div>
+            </div>
+
             <button class="btn-reveal-all" onclick="revealAll()">HIỆN TOÀN BỘ Ô CHỮ (CÓ DẤU)</button>
             <button onclick="revealDecodingCells()"
                 style="background-color: #ffff00; color: #000000; font-weight: bold !important; width: 100%; margin-top: 10px; border: 2px solid #000;">HIỆN
                 Ô GIẢI MÃ</button>
             <button class="btn-reset" onclick="resetBoard()">RESET BẢNG TRỐNG</button>
+            <button onclick="stopAllSounds()"
+                style="background: blue; color: white; font-weight: bold !important; width: 100%; margin-top: 10px; border: 1px solid #0055ff;">
+                DỪNG ÂM THANH
+            </button>
         </div>
 
         <!-- KHU VỰC DÀNH CHO LIST CHỌN NHẠC MỞ CHỮ -->
@@ -514,6 +552,7 @@
                 <option value="Nhac_Mo_chu_US.mp3">Nhạc Mở chữ US</option>
                 <option value="Nhac_mo_chu_VN_1.mp3">Nhạc Mở chữ VN 1</option>
                 <option value="Nhac_mo_chu_VN_2.mp3">Nhạc Mở chữ VN 2</option>
+                <option value="nhac_hien_o_chu.mp3">Nhạc Mở chữ VN 3</option>
             </select>
         </div>
 
@@ -532,7 +571,10 @@
                 </select>
             </div>
         </div>
-
+        <div style="display: flex; gap: 5px; margin-top: 5px;">
+            <button style="background: green; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
+                onclick="triggerSound('tossup.mp3')">Đoán nhanh</button>
+        </div>
         <div class="panel">
             <h3>3. BÀN PHÍM ĐIỀU KHIỂN</h3>
             <div id="keyboard" class="keyboard"></div>
@@ -569,6 +611,10 @@
                             <option value="Mo_o_Lan_2_VN_2.mp3">Mở ô lần 2 VN 2</option>
                             <option value="none">Không có</option>
                         </select>
+                    </div>
+                    <div style="display: flex; gap: 5px; margin-top: 5px;">
+                        <button style="background: green; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
+                            onclick="triggerSound('mo o chu 2001 2.mp3')">VN 2001</button>
                     </div>
                     <div style="display: flex; gap: 5px; margin-top: 5px;">
                         <button style="background: red; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
@@ -1499,7 +1545,39 @@
             document.getElementById('st-timer').innerText = countdownValue;
             stopCountdown();
             await db.from('wheel_game').update({ timer: countdownValue }).eq('room_id', currentRoomId);
+
+            // Tự động kích hoạt âm thanh theo option được chọn
+            if (seconds === 30) {
+                const sound30 = document.getElementById('select-sound-30s')?.value;
+                if (sound30) triggerSound(sound30);
+            } else if (seconds === 10) {
+                const sound10 = document.getElementById('select-sound-10s')?.value;
+                if (sound10) triggerSound(sound10);
+            }
+
             startCountdown();
+        }
+
+        // Hàm dừng toàn bộ âm thanh
+        function stopAllSounds() {
+            // 1. Tắt toàn bộ âm thanh đang chạy trên chính màn hình Controller (nếu có)
+            if (typeof activeSounds !== 'undefined' && Array.isArray(activeSounds)) {
+                activeSounds.forEach(sound => {
+                    sound.pause();
+                    sound.currentTime = 0;
+                });
+                activeSounds = [];
+            }
+
+            // 2. Gửi tín hiệu 'stop' lên Supabase để các trang khác (Host, Puzzleboard, Player 1/2/3) nhận biết và dừng nhạc
+            const soundSignal = "STOP?t=" + Date.now();
+            db.from('wheel_game')
+                .update({ current_sound: soundSignal })
+                .eq('room_id', currentRoomId)
+                .then(({ error }) => {
+                    if (error) console.error("Lỗi gửi tín hiệu dừng âm thanh:", error);
+                    else console.log("Đã phát tín hiệu dừng âm thanh thành công:", soundSignal);
+                });
         }
 
         async function revealNghia() {
@@ -1969,7 +2047,7 @@
                 await syncScores();
             }
         }
-        
+
         document.addEventListener('contextmenu', e => e.preventDefault());
         document.addEventListener('keydown', e => {
             if (e.keyCode === 123) e.preventDefault();
