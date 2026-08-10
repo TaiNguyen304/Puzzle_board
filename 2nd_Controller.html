@@ -3,9 +3,9 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Controller</title>
+    <title>Controller 2</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <style>
         :root {
             --pink: #ff00cc;
@@ -252,7 +252,6 @@
             display: none;
         }
 
-        /* Khung panel chính */
         .room-panel {
             position: relative;
             z-index: 60;
@@ -263,17 +262,14 @@
             font-family: sans-serif;
         }
 
-        /* Tiêu đề góc trên */
         .room-title {
             color: #ff00cc;
-            /* Màu hồng neon */
             font-size: 1rem;
             font-weight: bold;
             text-transform: uppercase;
             margin-bottom: 12px;
         }
 
-        /* Nút TẠO PHÒNG màu đỏ */
         .btn-create-room {
             background-color: #ff0000;
             color: #ffffff;
@@ -293,26 +289,22 @@
             background-color: #ffa500;
         }
 
-        /* Khung hiển thị thông tin nét đứt màu hồng */
         .room-info-box {
             border: 2px dashed #ff00cc;
             background-color: #0b0b0b;
             padding: 15px;
             border-radius: 6px;
             display: none;
-            /* Ẩn khi chưa bấm nút */
         }
 
-        /* Thông báo ĐÃ TẠO PHÒNG THÀNH CÔNG! */
         .status-text {
-            color: #f0c;
+            color: #ff00cc;
             font-weight: bold;
             font-size: 1.05rem;
             text-transform: uppercase;
             margin-bottom: 10px;
         }
 
-        /* Các dòng thông tin chi tiết (Mã phòng, Player) */
         .info-line {
             font-size: 0.95rem;
             font-weight: bold;
@@ -322,17 +314,14 @@
 
         .label-green {
             color: #00ff00;
-            /* Màu xanh lá tươi */
         }
 
         .val-yellow {
             color: #ffff00;
-            /* Màu vàng tươi cho mã phòng */
         }
 
         .val-white {
             color: #ffffff;
-            /* Màu trắng cho mật khẩu */
         }
 
         #lockOverlay {
@@ -416,28 +405,18 @@
         <div class="panel">
             <h3>2. HỆ THỐNG VÒNG THI</h3>
             <div class="grid-buttons" id="round-list">
-                <button onclick="handleRound('ĐNLH 1.1', false)">ĐNLH 1.1</button>
-                <button onclick="handleRound('ĐNLH 1.2', false)">ĐNLH 1.2</button>
-                <button onclick="handleRound('ĐNLH 1.3', false)">ĐNLH 1.3</button>
+                <button onclick="handleRound('Đoán Nhanh 1', false)">Đoán nhanh 1</button>
+                <button onclick="handleRound('Đoán Nhanh 2', false)">Đoán nhanh 2</button>
+                <button onclick="handleRound('Đoán Nhanh 3', false)">Đoán nhanh 3</button>
                 <button class="btn-round" onclick="handleRound('Vòng 1', true)">Vòng 1</button>
                 <button class="btn-round" onclick="handleRound('Vòng 2', true)">Vòng 2</button>
-
-                <button onclick="handleRound('ĐNLH 2.1', false)">ĐNLH 2.1</button>
-                <button onclick="handleRound('ĐNLH 2.2', false)">ĐNLH 2.2</button>
-                <button onclick="handleRound('ĐNLH 2.3', false)">ĐNLH 2.3</button>
                 <button class="btn-round" onclick="handleRound('Vòng 3', true)">Vòng 3</button>
-                <button class="btn-round" onclick="handleRound('Vòng phụ', true)">Vòng phụ</button>
-
-                <button onclick="handleRound('ĐNLH 3.1', false)">ĐNLH 3.1</button>
-                <button onclick="handleRound('ĐNLH 3.2', false)">ĐNLH 3.2</button>
-                <button onclick="handleRound('ĐNLH 3.3', false)">ĐNLH 3.3</button>
+                <button class="btn-round" onclick="handleRound('ĐNLH 1', false)">ĐNLH 1</button>
+                <button class="btn-round" onclick="handleRound('ĐNLH 2', false)">ĐNLH 2</button>
+                <button class="btn-round" onclick="handleRound('ĐNLH 3', false)">ĐNLH 3</button>
                 <button class="btn-round" onclick="handleRound('Vòng 4', true)">Vòng 4</button>
                 <button class="btn-round" onclick="handleRound('Vòng 5', true)">Vòng 5</button>
-
-                <button onclick="handleRound('ĐNLH 4.1', false)">ĐNLH 4.1</button>
-                <button onclick="handleRound('ĐNLH 4.2', false)">ĐNLH 4.2</button>
-                <button onclick="handleRound('ĐNLH 4.3', false)">ĐNLH 4.3</button>
-                <button class="btn-round" onclick="handleRound('Vòng 6', true)">Vòng 6</button>
+                <button class="btn-round" onclick="handleRound('Vòng phụ', true)">Vòng phụ</button>
                 <button class="btn-round" onclick="handleRound('Vòng Đặc biệt', true)">Vòng ĐB</button>
             </div>
 
@@ -519,7 +498,6 @@
                 </div>
             </div>
 
-            <!-- BỔ SUNG OPTION CHỌN NHẠC 30S & 10S -->
             <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
                 <div>
                     <label style="color:var(--neon); font-size:0.75rem; display:block; margin-bottom:3px;">OPTION CHỌN
@@ -543,6 +521,9 @@
             </div>
 
             <button class="btn-reveal-all" onclick="revealAll()">HIỆN TOÀN BỘ Ô CHỮ (CÓ DẤU)</button>
+            <button onclick="revealDecodingCells()"
+                style="background-color: #ffff00; color: #000000; font-weight: bold !important; width: 100%; margin-top: 10px; border: 2px solid #000;">HIỆN
+                Ô GIẢI MÃ</button>
             <button class="btn-reset" onclick="resetBoard()">RESET BẢNG TRỐNG</button>
             <button onclick="stopAllSounds()"
                 style="background: blue; color: white; font-weight: bold !important; width: 100%; margin-top: 10px; border: 1px solid #0055ff;">
@@ -550,7 +531,6 @@
             </button>
         </div>
 
-        <!-- KHU VỰC DÀNH CHO LIST CHỌN NHẠC MỞ CHỮ -->
         <div style="margin-top: 10px; margin-bottom: 10px;">
             <label style="color:var(--pink); font-size:0.85rem; display:block; margin-bottom:5px;">LIST NHẠC MỞ
                 CHỮ:</label>
@@ -563,7 +543,6 @@
             </select>
         </div>
 
-        <!-- KHU VỰC DÀNH CHO LIST CHỌN NHẠC GIẢI Ô CHỮ (DẠNG OPTION) -->
         <div style="margin-top: 10px; margin-bottom: 10px;">
             <label style="color:var(--pink); font-size:0.85rem; display:block; margin-bottom:5px;">LIST NHẠC GIẢI Ô
                 CHỮ:</label>
@@ -597,6 +576,12 @@
                 <div style="display: flex; gap: 10px;">
                     <button id="btnPos1" class="btn-action" onclick="processSequence(1)">Mở lần 1: Đánh dấu</button>
                     <button id="btnPos2" class="btn-action" onclick="processSequence(2)">Mở lần 2: Mở chữ</button>
+                </div>
+
+                <!-- BỔ SUNG MỤC KHÔI PHỤC CHỮ CÁI -->
+                <div style="margin-top: 12px; border-top: 1px dashed #555; padding-top: 10px;">
+                    <p style="margin: 0 0 8px 0; font-size: 0.85rem; color: var(--pink);">KHÔI PHỤC CHỮ CÁI:</p>
+                    <div id="restoreContainer" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 28px;"></div>
                 </div>
 
                 <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
@@ -709,7 +694,6 @@
                     <button onclick="multiplyScore('red', 0.5)"
                         style="background: red; color: #fff; flex: 1; padding: 5px; font-size: 11px;">:2</button>
                 </div>
-                <!-- Các nút Reset vòng và Reset tổng cho NC ĐỎ -->
                 <div style="margin-top: 5px; display: flex; gap: 5px;">
                     <button onclick="resetPlayerScore('red', 'round')"
                         style="background: red; color: #fff; flex: 1; padding: 5px; font-size: 10px;">Reset
@@ -729,13 +713,13 @@
                     <div id="disp-yellow-round"
                         style="flex: 1; padding: 5px; text-align: center; background:yellow; color:black;">0</div>
                 </div>
-                <input type="text" id="input-yellow"
-                    style="width:100%; padding:8px; background:#000; color:#fff; border:1px solid #555; margin-bottom:5px;"
-                    placeholder="Nhập điểm..." oninput="formatInput(this)">
                 <div style="margin-bottom: 5px; font-size: 11px; color: #fff;">
                     <input type="checkbox" id="chk-yellow-last-spin" style="cursor: pointer;">
                     <label for="chk-yellow-last-spin" style="cursor: pointer;">Lượt quay cuối cùng</label>
                 </div>
+                <input type="text" id="input-yellow"
+                    style="width:100%; padding:8px; background:#000; color:#fff; border:1px solid #555; margin-bottom:5px;"
+                    placeholder="Nhập điểm..." oninput="formatInput(this)">
                 <div style="display: flex; gap: 5px;">
                     <button style="background:green; color:white; font-size: 10px; padding: 5px; flex: 1;"
                         onclick="addScore('yellow', 'total')">TỔNG +</button>
@@ -763,7 +747,6 @@
                     <button onclick="multiplyScore('yellow', 0.5)"
                         style="background: yellow; color: #000; flex: 1; padding: 5px; font-size: 11px;">:2</button>
                 </div>
-                <!-- Các nút Reset vòng và Reset tổng cho NC VÀNG -->
                 <div style="margin-top: 5px; display: flex; gap: 5px;">
                     <button onclick="resetPlayerScore('yellow', 'round')"
                         style="background: yellow; color: #000; flex: 1; padding: 5px; font-size: 10px;">Reset
@@ -783,13 +766,13 @@
                     <div id="disp-blue-round"
                         style="flex: 1; padding: 5px; text-align: center; background:blue; color:white;">0</div>
                 </div>
-                <input type="text" id="input-blue"
-                    style="width:100%; padding:8px; background:#000; color:#fff; border:1px solid #555; margin-bottom:5px;"
-                    placeholder="Nhập điểm..." oninput="formatInput(this)">
                 <div style="margin-bottom: 5px; font-size: 11px; color: #fff;">
                     <input type="checkbox" id="chk-blue-last-spin" style="cursor: pointer;">
                     <label for="chk-blue-last-spin" style="cursor: pointer;">Lượt quay cuối cùng</label>
                 </div>
+                <input type="text" id="input-blue"
+                    style="width:100%; padding:8px; background:#000; color:#fff; border:1px solid #555; margin-bottom:5px;"
+                    placeholder="Nhập điểm..." oninput="formatInput(this)">
                 <div style="display: flex; gap: 5px;">
                     <button style="background:green; color:white; font-size: 10px; padding: 5px; flex: 1;"
                         onclick="addScore('blue', 'total')">TỔNG +</button>
@@ -817,7 +800,6 @@
                     <button onclick="multiplyScore('blue', 0.5)"
                         style="background: blue; color: #fff; flex: 1; padding: 5px; font-size: 11px;">:2</button>
                 </div>
-                <!-- Các nút Reset vòng và Reset tổng cho NC XANH -->
                 <div style="margin-top: 5px; display: flex; gap: 5px;">
                     <button onclick="resetPlayerScore('blue', 'round')"
                         style="background: blue; color: #fff; flex: 1; padding: 5px; font-size: 10px;">Reset
@@ -901,10 +883,8 @@
         function triggerSound(fileName) {
             if (!fileName || fileName === 'none') return;
 
-            // Thêm timestamp ngẫu nhiên để ép Realtime nhận diện thay đổi
             const soundSignal = fileName + "?t=" + Date.now();
 
-            // Bắn request lên Supabase mà KHÔNG dùng await để tránh block luồng chính
             db.from('wheel_game')
                 .update({ current_sound: soundSignal })
                 .eq('room_id', currentRoomId)
@@ -921,28 +901,117 @@
             }
         }
 
+        function getCharFromCell(value) {
+            if (value == null) return "";
+            if (typeof value === 'object') {
+                if (value.char != null) return String(value.char).trim();
+                if (value.v != null) return String(value.v).trim();
+            }
+            return String(value).trim();
+        }
+
+        function extractDecodingPositions(layout) {
+            const positions = [];
+            if (!layout || !Array.isArray(layout)) return positions;
+            for (let r = 0; r < layout.length; r++) {
+                const row = layout[r];
+                if (!Array.isArray(row)) continue;
+                for (let c = 0; c < row.length; c++) {
+                    const cellData = row[c];
+                    if (cellData && typeof cellData === 'object' && cellData.isDecoding) {
+                        const pos = rcToPosition(r, c);
+                        if (pos !== null) positions.push(pos);
+                    }
+                }
+            }
+            return positions;
+        }
+
+        function getCellValue(cell) {
+            if (cell == null || cell === '') return null;
+            if (typeof cell === 'object' && 'v' in cell) {
+                const v = cell.v;
+                if (v == null || String(v).trim() === '') return null;
+                return String(v).trim();
+            }
+            const s = String(cell).trim();
+            return s === '' ? null : s;
+        }
+
+        function getExcelCellText(value) {
+            if (value == null) return '';
+            if (typeof value === 'object') {
+                if (Array.isArray(value.richText)) return value.richText.map(t => t.text || '').join('').trim();
+                if (value.result != null) return String(value.result).trim();
+                if (value.text != null) return String(value.text).trim();
+            }
+            return String(value).trim();
+        }
+
+        function isYellowExcelFill(cell) {
+            const fill = cell && cell.fill;
+            if (!fill || fill.type !== 'pattern' || !fill.pattern || fill.pattern === 'none') return false;
+
+            const checkColor = (color) => {
+                if (!color) return false;
+                if (color.argb) {
+                    const hex = String(color.argb).toUpperCase();
+                    const rgb = hex.length >= 6 ? hex.slice(-6) : hex;
+                    if (['FFFF00', 'FFFFE0', 'FFC000', 'FFD966', 'FFF2CC', 'FFE699', 'FFFF99'].includes(rgb)) return true;
+                    const r = parseInt(rgb.slice(0, 2), 16);
+                    const g = parseInt(rgb.slice(2, 4), 16);
+                    const b = parseInt(rgb.slice(4, 6), 16);
+                    if (!isNaN(r) && !isNaN(g) && !isNaN(b) && r >= 180 && g >= 180 && b <= 120) return true;
+                }
+                if ([6, 13, 19, 43, 44].includes(color.indexed)) return true;
+                return false;
+            };
+
+            return checkColor(fill.fgColor) || checkColor(fill.bgColor);
+        }
+
+        function buildRowsFromExcelWorksheet(worksheet) {
+            const dim = worksheet.dimensions;
+            const maxRow = dim ? dim.bottom : (worksheet.rowCount || 0);
+            const maxCol = dim ? dim.right : (worksheet.columnCount || 0);
+            const rows = [];
+            for (let r = 1; r <= maxRow; r++) {
+                const rowData = [];
+                const row = worksheet.getRow(r);
+                for (let c = 1; c <= maxCol; c++) {
+                    const cell = row.getCell(c);
+                    const text = getExcelCellText(cell.value);
+                    const isYellow = isYellowExcelFill(cell);
+                    if (text !== '' || isYellow) {
+                        rowData[c - 1] = { v: text, isYellow };
+                    } else {
+                        rowData[c - 1] = null;
+                    }
+                }
+                rows[r - 1] = rowData;
+            }
+            return rows;
+        }
+
         function getPuzzleStringWithSpaces(layout, isTungHoanh = false) {
             if (!layout || !Array.isArray(layout)) return "-";
             const words = [];
             let currentWord = "";
 
             const isEmptyCell = (value) => {
-                if (value == null) return true;
-                const cell = String(value).trim();
+                const cell = getCharFromCell(value);
                 return cell === "" || /^(null|undefined|nan)$/i.test(cell);
             };
 
             if (isTungHoanh) {
-                // 1. Quét hàng ngang
                 layout.forEach(row => {
                     if (!Array.isArray(row)) return;
                     currentWord = "";
                     for (let i = 0; i < row.length; i++) {
-                        const char = row[i];
-                        if (!isEmptyCell(char)) {
-                            currentWord += String(char).trim();
+                        const char = getCharFromCell(row[i]);
+                        if (!isEmptyCell(row[i])) {
+                            currentWord += char;
                         } else {
-                            // Chỉ lấy các từ có >= 2 ký tự để tránh các điểm giao cắt đơn lẻ
                             if (currentWord.length > 1) words.push(currentWord);
                             currentWord = "";
                         }
@@ -950,13 +1019,12 @@
                     if (currentWord.length > 1) words.push(currentWord);
                 });
 
-                // 2. Quét cột dọc
                 const numCols = Math.max(...layout.map(row => Array.isArray(row) ? row.length : 0));
                 for (let c = 0; c < numCols; c++) {
                     currentWord = "";
                     for (let r = 0; r < layout.length; r++) {
                         if (layout[r] && !isEmptyCell(layout[r][c])) {
-                            currentWord += String(layout[r][c]).trim();
+                            currentWord += getCharFromCell(layout[r][c]);
                         } else {
                             if (currentWord.length > 1) words.push(currentWord);
                             currentWord = "";
@@ -965,14 +1033,13 @@
                     if (currentWord.length > 1) words.push(currentWord);
                 }
             } else {
-                // Đọc bình thường (trái sang phải, trên xuống dưới)
                 layout.forEach(row => {
                     if (!Array.isArray(row)) return;
                     currentWord = "";
                     for (let i = 0; i < row.length; i++) {
-                        const char = row[i];
-                        if (!isEmptyCell(char)) {
-                            currentWord += String(char).trim();
+                        const char = getCharFromCell(row[i]);
+                        if (!isEmptyCell(row[i])) {
+                            currentWord += char;
                         } else if (currentWord !== "") {
                             words.push(currentWord);
                             currentWord = "";
@@ -1011,7 +1078,6 @@
 
                 document.getElementById('st-cat').innerText = data.category || "-";
 
-                // KIỂM TRA CHỦ ĐỀ TUNG HOÀNH KHI LOAD GAME
                 const catUpper = String(data.category || "").toUpperCase();
                 const isTungHoanh = catUpper.includes('TUNG HOÀNH') || catUpper.includes('TUNG HOANH');
 
@@ -1040,8 +1106,48 @@
             const { cols12, cols14 } = config;
 
             const getChars = (rowArr, start, end) => {
-                if (!rowArr) return new Array(end - start + 1).fill("");
-                return rowArr.slice(start, end + 1).map(c => (c != null && c !== '') ? String(c).trim() : "");
+                const result = [];
+                for (let i = start; i <= end; i++) {
+                    const cellObj = rowArr ? rowArr[i] : null;
+
+                    if (cellObj == null || cellObj === '') {
+                        result.push("");
+                        continue;
+                    }
+
+                    let char = "";
+                    let isYellow = false;
+
+                    if (typeof cellObj === 'object' && cellObj !== null) {
+                        char = (cellObj.v != null) ? String(cellObj.v).trim() : "";
+                        if (cellObj.isYellow) isYellow = true;
+                        if (cellObj.s && cellObj.s.fill && cellObj.s.fill.fgColor) {
+                            const fg = cellObj.s.fill.fgColor;
+                            if (fg.rgb) {
+                                const colorHex = String(fg.rgb).toUpperCase();
+                                if (colorHex === "FFFF00" || colorHex === "FFFFFF00" || colorHex.endsWith("FFFF00") || colorHex === "FFFFE0") {
+                                    isYellow = true;
+                                }
+                            }
+                            if (fg.indexed === 6 || fg.indexed === 13 || fg.indexed === 19) {
+                                isYellow = true;
+                            }
+                        }
+                    } else {
+                        char = String(cellObj).trim();
+                    }
+
+                    if (char !== "") {
+                        if (isYellow) {
+                            result.push({ char: char, isDecoding: true });
+                        } else {
+                            result.push(char);
+                        }
+                    } else {
+                        result.push("");
+                    }
+                }
+                return result;
             };
 
             layout.push(["", ...getChars(block[0], cols12[0], cols12[1]), ""]);
@@ -1052,32 +1158,37 @@
             return layout;
         }
 
-        document.getElementById('excelFile').addEventListener('change', (e) => {
+        document.getElementById('excelFile').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
             document.getElementById('file-name-display').innerText = "📁 " + file.name;
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                const data = new Uint8Array(evt.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const workbook = new ExcelJS.Workbook();
+                await workbook.xlsx.load(arrayBuffer);
+                const worksheet = workbook.worksheets[0];
+                if (!worksheet) {
+                    showPopup("Lỗi", "Không tìm thấy sheet trong file Excel.");
+                    return;
+                }
+                const rows = buildRowsFromExcelWorksheet(worksheet);
 
                 excelData = [];
+                let decodeCount = 0;
                 for (let i = 1; i < rows.length; i += 4) {
                     const block = rows.slice(i, i + 4);
-                    if (!block[0] || !block[0][0]) continue;
+                    const roundName = getCellValue(block[0] && block[0][0]);
+                    if (!roundName) continue;
 
-                    const roundName = String(block[0][0]).trim();
                     const options = [];
 
                     ["P1", "P2", "P3"].forEach(key => {
                         const config = COL_MAP[key];
-                        const catName = block[0][config.cat];
+                        const catName = getCellValue(block[0] && block[0][config.cat]);
                         if (catName) {
-                            options.push({
-                                cat: String(catName).trim(),
-                                layout: buildLayoutFromBlock(block, config)
-                            });
+                            const layout = buildLayoutFromBlock(block, config);
+                            decodeCount += extractDecodingPositions(layout).length;
+                            options.push({ cat: catName, layout });
                         }
                     });
 
@@ -1085,9 +1196,11 @@
                         excelData.push({ Vong: roundName, Options: options });
                     }
                 }
-                showPopup("Hệ Thống", `Đã nạp file Excel thành công!`);
-            };
-            reader.readAsArrayBuffer(file);
+                showPopup("Hệ Thống", `Đã nạp file Excel thành công! (Phát hiện ${decodeCount} ô giải mã)`);
+            } catch (err) {
+                console.error(err);
+                showPopup("Lỗi", "Không đọc được file Excel: " + err.message);
+            }
         });
 
         function handleRound(roundName, hasPopup) {
@@ -1151,13 +1264,14 @@
         async function sendToBoard(cat, layout) {
             currentLayout = layout;
 
-            // KIỂM TRA TÊN CHỦ ĐỀ TRƯỚC KHI TRÍCH XUẤT CHỮ
             const catUpper = String(cat || "").toUpperCase();
             const isTungHoanh = catUpper.includes('TUNG HOÀNH') || catUpper.includes('TUNG HOANH');
             const rawText = getPuzzleStringWithSpaces(layout, isTungHoanh);
 
             currentPuzzleRaw = rawText;
             usedChars = [];
+
+            const decodingPositions = extractDecodingPositions(layout);
 
             const { error } = await db.from('wheel_game').update({
                 puzzle_text: rawText,
@@ -1167,6 +1281,7 @@
                 marked_positions: "",
                 revealed_positions: "",
                 board_layout: JSON.stringify(layout),
+                decoding_positions: decodingPositions.join(','),
                 is_full_reveal: false
             }).eq('room_id', currentRoomId);
 
@@ -1174,8 +1289,11 @@
                 document.getElementById('st-round').innerText = selectedRoundName;
                 document.getElementById('st-cat').innerText = cat;
                 document.getElementById('st-puz').innerText = rawText;
+                console.log(`Đã gửi bảng: ${decodingPositions.length} ô giải mã tại vị trí [${decodingPositions.join(', ')}]`);
                 renderKeyboard();
                 triggerSelectedOpenWordSound();
+            } else {
+                console.error('Lỗi sendToBoard:', error);
             }
         }
 
@@ -1218,7 +1336,6 @@
 
             if (positions.length === 0 || !currentLayout) return;
 
-            // Lấy dữ liệu mới nhất từ DB
             const { data: row } = await db.from('wheel_game').select('marked_positions, revealed_positions').eq('room_id', currentRoomId).maybeSingle();
 
             let marked = (row && row.marked_positions) ? row.marked_positions.split(',').filter(Boolean).map(Number) : [];
@@ -1237,20 +1354,17 @@
 
                 try {
                     if (mode === 1) {
-                        // --- MỞ LẦN 1 (ĐÁNH DẤU Ô) ---
                         if (!marked.includes(pos)) marked.push(pos);
 
                         await db.from('wheel_game').update({
                             marked_positions: marked.join(',')
                         }).eq('room_id', currentRoomId);
 
-                        // Gửi tín hiệu nhạc (Không await để không kẹt luồng)
                         if (soundStep1 && soundStep1 !== 'none') {
                             triggerSound(soundStep1);
                         }
                     }
                     else if (mode === 2) {
-                        // --- MỞ LẦN 2 (LẬT CHỮ) ---
                         const rc = positionToRC(pos);
                         let cellVal = currentLayout[rc.r] ? currentLayout[rc.r][rc.c] : null;
                         let ch = typeof getCharFromCell === 'function' ? getCharFromCell(cellVal) : cellVal;
@@ -1264,7 +1378,6 @@
                                 revealed_positions: revPos.join(',')
                             }).eq('room_id', currentRoomId);
 
-                            // Gửi tín hiệu nhạc
                             if (soundStep2 && soundStep2 !== 'none') {
                                 triggerSound(soundStep2);
                             }
@@ -1274,7 +1387,6 @@
                     console.error(`Lỗi xử lý tại ô ${pos}:`, err);
                 }
 
-                // Chờ 1.2s trước khi mở ô tiếp theo (giúp hiệu ứng ô và tiếng chạy lần lượt)
                 if (i < positions.length - 1) {
                     await new Promise(r => setTimeout(r, 1200));
                 }
@@ -1285,7 +1397,6 @@
 
         async function quickStart() {
             if (selectedRoundName && selectedRoundName.includes('ĐB5.')) {
-                // Tự động mở chuông và đặt màu viền/ô về màu tím khi bấm Bắt đầu hiện chữ
                 await db.from('wheel_game').update({
                     revealed_positions: "",
                     marked_positions: "",
@@ -1319,7 +1430,6 @@
             if (quickInterval) clearInterval(quickInterval);
 
             if (selectedRoundName && selectedRoundName.includes('ĐB5.')) {
-                // Tự động mở chuông và trả màu viền/ô về màu tím khi bấm Tiếp tục hiện chữ
                 await db.from('wheel_game').update({
                     is_buzzer_locked: false,
                     buzzer_player: "",
@@ -1394,14 +1504,12 @@
             await db.from('wheel_game').update({ timer: countdownValue }).eq('room_id', currentRoomId);
         }
 
-        // Hàm phát nhạc tương ứng khi chọn đếm giờ 30s / 10s
         async function setTimer(seconds) {
             countdownValue = seconds;
             document.getElementById('st-timer').innerText = countdownValue;
             stopCountdown();
             await db.from('wheel_game').update({ timer: countdownValue }).eq('room_id', currentRoomId);
 
-            // Tự động kích hoạt âm thanh theo option được chọn
             if (seconds === 30) {
                 const sound30 = document.getElementById('select-sound-30s')?.value;
                 if (sound30) triggerSound(sound30);
@@ -1413,9 +1521,7 @@
             startCountdown();
         }
 
-        // Hàm dừng toàn bộ âm thanh
         function stopAllSounds() {
-            // 1. Tắt toàn bộ âm thanh đang chạy trên chính màn hình Controller (nếu có)
             if (typeof activeSounds !== 'undefined' && Array.isArray(activeSounds)) {
                 activeSounds.forEach(sound => {
                     sound.pause();
@@ -1424,7 +1530,6 @@
                 activeSounds = [];
             }
 
-            // 2. Gửi tín hiệu 'stop' lên Supabase để các trang khác (Host, Puzzleboard, Player 1/2/3) nhận biết và dừng nhạc
             const soundSignal = "STOP?t=" + Date.now();
             db.from('wheel_game')
                 .update({ current_sound: soundSignal })
@@ -1493,26 +1598,33 @@
 
         async function revealAll() {
             usedChars = [...VIETNAMESE_ALPHABET];
+
+            const decodingPositions = extractDecodingPositions(currentLayout);
+
             const solveSound = document.getElementById('select-sound-solve-puzzle')?.value;
             if (solveSound) {
                 triggerSound(solveSound);
             }
+
             await db.from('wheel_game').update({
                 revealed_chars: usedChars.join(','),
                 pending_positions: "",
-                is_full_reveal: true
+                is_full_reveal: true,
+                decoding_positions: decodingPositions.join(',')
             }).eq('room_id', currentRoomId);
+
             renderKeyboard();
         }
 
         async function resetBoard() {
             quickStop();
-            // Tự động chuyển màu viền về màu tím (rgb(128,0,128)) khi reset bảng trống
             await db.from('wheel_game').update({
                 puzzle_text: "", category: "", revealed_chars: "",
                 pending_positions: "",
                 marked_positions: "", revealed_positions: "",
                 board_layout: "[]", is_full_reveal: false,
+                decoding_positions: "",
+                revealed_chars: '',
                 border_color: 'rgb(128,0,128)'
             }).eq('room_id', currentRoomId);
             usedChars = []; currentLayout = null; currentPuzzleRaw = "";
@@ -1521,23 +1633,76 @@
             renderKeyboard();
         }
 
+        async function restoreLetter(char) {
+            if (!char) return;
+            usedChars = usedChars.filter(c => c !== char);
+            renderKeyboard();
+
+            if (currentRoomId) {
+                await db.from('wheel_game').update({
+                    revealed_chars: usedChars.join(',')
+                }).eq('room_id', currentRoomId);
+            }
+        }
+
+        function renderRestoreLetters() {
+            const container = document.getElementById('restoreContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (!usedChars || usedChars.length === 0) {
+                container.innerHTML = '<span style="color: #888; font-size: 0.8rem; font-style: italic;">Chưa có chữ cái nào được đoán</span>';
+                return;
+            }
+
+            usedChars.forEach(char => {
+                if (!char) return;
+                const box = document.createElement('div');
+                box.style.cssText = 'display: inline-flex; align-items: center; gap: 6px; background: #000; padding: 4px 8px; border-radius: 4px; border: 1px solid #555;';
+
+                const letterSpan = document.createElement('span');
+                letterSpan.style.cssText = 'color: var(--neon); font-size: 1.05rem; font-weight: bold;';
+                letterSpan.innerText = char;
+
+                const btn = document.createElement('button');
+                btn.style.cssText = 'background: green; color: white; font-weight: bold !important; font-size: 0.75rem; padding: 3px 8px; border: none; border-radius: 3px; cursor: pointer; text-transform: uppercase;';
+                btn.innerText = 'Khôi phục';
+                btn.onclick = () => restoreLetter(char);
+
+                box.appendChild(letterSpan);
+                box.appendChild(btn);
+                container.appendChild(box);
+            });
+        }
+
         async function pressKey(char) {
             if (!usedChars.includes(char)) {
                 let positions = [];
-
                 const { data: row } = await db.from('wheel_game').select('revealed_positions').eq('room_id', currentRoomId).maybeSingle();
                 let revPos = (row && row.revealed_positions) ? row.revealed_positions.split(',').filter(Boolean).map(Number) : [];
 
                 if (currentLayout) {
                     for (let r = 0; r < 4; r++) {
                         for (let c = 0; c < 14; c++) {
-                            let cellChar = currentLayout[r][c];
+                            let cellData = currentLayout[r][c];
+                            let cellChar = "";
+                            let isDecoding = false;
+                            if (cellData && typeof cellData === 'object') {
+                                cellChar = cellData.char;
+                                isDecoding = !!cellData.isDecoding;
+                            } else {
+                                cellChar = cellData;
+                            }
+
+                            if (isDecoding) {
+                                continue;
+                            }
+
                             if (cellChar) {
                                 let norm = cellChar.normalize('NFD')
-                                    .replace(/[̣̀́̃̉]/g, '')
+                                    .replace(/[̣̀́̃̉]/g, '')
                                     .normalize('NFC')
                                     .toUpperCase();
-
                                 if (norm === char) {
                                     let pos = rcToPosition(r, c);
                                     if (pos && !revPos.includes(pos)) {
@@ -1549,25 +1714,33 @@
                     }
                 }
 
+                usedChars.push(char);
+
                 if (positions.length > 0) {
                     document.getElementById('numPos').value = positions.length;
+
                     generatePosInputs();
-                    const inputs = document.querySelectorAll('.pos-item');
+
+                    const inputs = document.getElementById('posContainer').querySelectorAll('input');
                     positions.forEach((p, idx) => {
                         if (inputs[idx]) inputs[idx].value = p;
                     });
+
+                    await db.from('wheel_game').update({
+                        pending_positions: positions.join(','),
+                        revealed_chars: usedChars.join(',')
+                    }).eq('room_id', currentRoomId);
                 } else {
                     document.getElementById('numPos').value = "";
-                    generatePosInputs();
+                    document.getElementById('posContainer').innerHTML = "";
+
+                    await db.from('wheel_game').update({
+                        pending_positions: '',
+                        revealed_chars: usedChars.join(',')
+                    }).eq('room_id', currentRoomId);
                 }
 
-                usedChars.push(char);
                 renderKeyboard();
-
-                await db.from('wheel_game').update({
-                    revealed_chars: usedChars.join(','),
-                    pending_positions: positions.length > 0 ? positions.join(',') : ''
-                }).eq('room_id', currentRoomId);
             }
         }
 
@@ -1581,6 +1754,7 @@
                 btn.onclick = () => pressKey(char);
                 kb.appendChild(btn);
             });
+            renderRestoreLetters();
         }
 
         function showPopup(title, message, actionsHtml = "") {
@@ -1634,10 +1808,8 @@
             const val = parseInt(document.getElementById(`input-${p}`).value.replace(/\./g, "")) || 0;
             scores[p][t] += val;
 
-            // Lấy trạng thái của ô tích chọn "Lượt quay cuối cùng" tương ứng với người chơi
             const isLastSpin = document.getElementById(`chk-${p}-last-spin`)?.checked;
 
-            // Nếu là cộng điểm VÒNG và có TÍCH CHỌN lượt quay cuối cùng thì KHÔNG xóa textbox
             if (!(t === 'round' && isLastSpin)) {
                 document.getElementById(`input-${p}`).value = "";
             }
@@ -1773,14 +1945,43 @@
             }
         }
 
+        async function revealDecodingCells() {
+            if (!currentLayout) return;
+            let decodingPositions = [];
+
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 14; c++) {
+                    let cellData = currentLayout[r][c];
+                    let isDecoding = (cellData && typeof cellData === 'object') ? cellData.isDecoding : false;
+                    let pos = rcToPosition(r, c);
+                    if (pos && isDecoding) {
+                        decodingPositions.push(pos);
+                    }
+                }
+            }
+
+            if (decodingPositions.length === 0) {
+                return;
+            }
+
+            const { data } = await db.from('wheel_game').select('revealed_positions').eq('room_id', currentRoomId).single();
+            let currentRev = data && data.revealed_positions ? data.revealed_positions.split(',').filter(Boolean).map(Number) : [];
+
+            decodingPositions.forEach(p => {
+                if (!currentRev.includes(p)) currentRev.push(p);
+            });
+
+            await db.from('wheel_game').update({
+                revealed_positions: currentRev.join(',')
+            }).eq('room_id', currentRoomId);
+        }
+
         async function generateRoomAndPasswords() {
-            // 1. Tạo ngẫu nhiên Mã phòng (6 chữ số) và 3 Mật khẩu (4 chữ số)
             const roomId = String(Math.floor(100000 + Math.random() * 900000));
             const passP1 = String(Math.floor(1000 + Math.random() * 9000));
             const passP2 = String(Math.floor(1000 + Math.random() * 9000));
             const passP3 = String(Math.floor(1000 + Math.random() * 9000));
 
-            // 2. Cập nhật mã phòng và mật khẩu lên Supabase (Đã sửa tên cột chính xác)
             const { data, error } = await db.from('wheel_game').insert({
                 id: Date.now(),
                 room_id: roomId,
@@ -1789,14 +1990,12 @@
                 pass_player3: passP3
             }).select();
 
-            // Xử lý lỗi
             if (error) {
                 console.error("Lỗi Supabase:", error.message);
                 showPopup("Lỗi", "Lỗi tạo phòng: " + error.message);
                 return;
             }
 
-            // 3. Cập nhật giao diện sau khi lưu thành công
             document.getElementById('room-id-val').innerText = roomId;
             document.getElementById('p1-pass-val').innerText = passP1;
             document.getElementById('p2-pass-val').innerText = passP2;
@@ -1819,7 +2018,6 @@
             }
         }
 
-        // Hàm reset riêng điểm vòng hoặc điểm tổng của 1 người chơi
         async function resetPlayerScore(player, type) {
             if (scores[player] && (type === 'round' || type === 'total')) {
                 scores[player][type] = 0;

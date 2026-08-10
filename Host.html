@@ -107,14 +107,11 @@
             font-size: 70px;
             box-sizing: border-box;
 
-            /* TRẢ VỀ NGUYÊN BẢN: Tuyệt đối không thêm border làm thay đổi kích thước hay lộ viền đen */
             border: none;
             border-radius: 0px;
-            /* Trả về border-radius nguyên bản của bạn */
 
             background-image: url("Ô chữ.png");
             background-size: 110% 110%;
-            /* Trả về tỷ lệ hiển thị đẹp nhất của ảnh */
             background-position: center;
             background-repeat: no-repeat;
 
@@ -126,12 +123,9 @@
             user-select: none;
         }
 
-        /* --- CÁC TRẠNG THÁI THAY ĐỔI: Dùng hiệu ứng đổ bóng vào trong để giả lập viền --- */
-
         .cell.active {
             background-image: none;
             background-color: white;
-            /* Viền đen 3px inset và viền đỏ 1px inset xếp chồng lên nhau */
             box-shadow: inset 0 0 0 2px #000, inset 0 0 0 3px #2a032a;
             border-radius: 0px;
         }
@@ -140,7 +134,6 @@
             background-image: none;
             background-color: white;
             box-shadow: inset 0 0 0 3px #000;
-            /* Viền trong 3px sắc nét */
             border-radius: 0px;
             color: #000;
             font-weight: bold;
@@ -151,7 +144,6 @@
             background-image: none;
             background-color: blue;
             box-shadow: inset 0 0 0 3px #000;
-            /* Viền trong 3px sắc nét */
             border-radius: 0px;
             color: transparent;
         }
@@ -166,7 +158,6 @@
             color: transparent;
         }
 
-        /* --- CỘT PHẢI: BẢNG ĐIỂM KÉP & THÔNG TIN --- */
         .right-col {
             display: flex;
             flex-direction: column;
@@ -359,7 +350,6 @@
             transition: background 0.25s ease, color 0.25s ease;
         }
 
-        /* Trạng thái khi kích hoạt */
         .buzzer-indicator.active-p1 {
             background: #ff0000 !important;
             color: white !important;
@@ -501,7 +491,7 @@
 
         if (!roomId) {
             document.body.innerHTML = '<div id="no-roomid-msg">Vui lòng nhập tham số ?roomid trên URL.</div>';
-            if (typeof init === 'function') init = function () { }; // Chặn hàm init chạy
+            if (typeof init === 'function') init = function () { };
             window.onload = null;
             throw new Error("Thiếu tham số roomid trên URL");
         }
@@ -551,7 +541,6 @@
         }
         document.addEventListener('click', unlockAudio);
 
-        // Hàm xử lý phát âm thanh (Sao chép logic tối ưu từ Puzzleboard)
         function handleSoundSync(soundSignal) {
             if (!soundSignal) return;
 
@@ -561,7 +550,6 @@
             const soundFile = soundSignal.split('?')[0];
 
             if (soundFile === 'STOP') {
-                // Dừng tất cả âm thanh đang phát cùng lúc
                 activeAudios.forEach(audio => {
                     audio.pause();
                     audio.currentTime = 0;
@@ -578,11 +566,9 @@
                 buzzerAudio.play().catch(err => console.warn(err));
             }
             else {
-                // Tạo đối tượng Audio mới cho mỗi âm thanh để phát đè/phát song song nhiều âm thanh cùng lúc
                 const audio = new Audio(soundFile);
                 activeAudios.push(audio);
 
-                // Tự động xóa khỏi danh sách sau khi âm thanh kết thúc
                 audio.onended = () => {
                     const index = activeAudios.indexOf(audio);
                     if (index > -1) activeAudios.splice(index, 1);
@@ -615,7 +601,6 @@
             return [];
         }
 
-        // Đổi tọa độ hàng cột sang vị trí ID ô số (1-52)
         function rcToPosition(r, c) {
             if (r === 0) return (c >= 1 && c <= 12) ? c : null;
             if (r === 1) return (c >= 0 && c <= 13) ? 13 + c : null;
@@ -653,7 +638,6 @@
             const words = [];
             let currentWord = "";
 
-            // Hàm bổ trợ lấy ký tự thực (xử lý cả dạng chuỗi và dạng Object {char: 'A'})
             const getCharValue = (cell) => {
                 if (cell == null) return "";
                 if (typeof cell === 'object' && cell.char !== undefined) {
@@ -668,7 +652,6 @@
             };
 
             if (isTungHoanh) {
-                // 1. Quét hàng ngang
                 layout.forEach(row => {
                     if (!Array.isArray(row)) return;
                     currentWord = "";
@@ -684,7 +667,6 @@
                     if (currentWord.length > 1) words.push(currentWord);
                 });
 
-                // 2. Quét cột dọc
                 const numCols = Math.max(...layout.map(row => Array.isArray(row) ? row.length : 0));
                 for (let c = 0; c < numCols; c++) {
                     currentWord = "";
@@ -699,7 +681,6 @@
                     if (currentWord.length > 1) words.push(currentWord);
                 }
             } else {
-                // Đọc bình thường từng hàng
                 layout.forEach(row => {
                     if (!Array.isArray(row)) return;
                     currentWord = "";
@@ -750,20 +731,14 @@
                     if (cell != null) {
                         const cellStr = String(cell).trim();
 
-                        // Kiểm tra nếu ô trống hoặc chứa các từ khóa lỗi hệ thống thì bỏ qua
                         if (cellStr !== "" && !/^(null|undefined|nan)$/i.test(cellStr)) {
                             usedCells++;
 
-                            // 1. Chuẩn hóa chuỗi để tách dấu tiếng Việt ra (Ví dụ: "Á" -> "A" + "́")
-                            // 2. Loại bỏ hoàn toàn các dấu thanh tiếng Việt vừa tách ra đó
-                            // 3. Thay thế chữ Đ/đ thành D/d để đưa về bảng chữ cái Latin cơ bản (A-Z)
                             const cleanStr = cellStr
                                 .normalize("NFD")
                                 .replace(/[\u0300-\u036f]/g, "")
                                 .replace(/[Đđ]/g, "d");
 
-                            // Kiểm tra: Nếu chuỗi sau khi làm sạch vẫn chứa ký tự KHÔNG PHẢI chữ (A-Z) và KHÔNG PHẢI số (0-9)
-                            // (Vì đã dùng .trim() ở trên nên đã loại bỏ hoàn toàn dấu cách)
                             if (/[^A-Za-z0-9]/.test(cleanStr)) {
                                 specialCells++;
                             }
@@ -778,12 +753,10 @@
         function updateHostUI(newData) {
             if (!newData) return;
 
-            // --- 1. CẬP NHẬT CACHE DỮ LIỆU ---
             if (newData.puzzle_text !== undefined) boardStateCache.puzzle_text = newData.puzzle_text;
             if (newData.category !== undefined) boardStateCache.category = newData.category;
             if (newData.round_name !== undefined) boardStateCache.round_name = newData.round_name;
 
-            // Nếu board_layout thay đổi, tính toán lại số ô sử dụng và ô có ký tự đặc biệt
             if (newData.board_layout !== undefined) {
                 boardStateCache.board_layout = parseBoardLayout(newData.board_layout);
                 const { usedCells, specialCells } = calculateCellStats(boardStateCache.board_layout);
@@ -793,22 +766,17 @@
 
             if (newData.revealed_chars !== undefined) {
                 boardStateCache.revealed_chars = newData.revealed_chars ? newData.revealed_chars.split(',').map(s => s.trim()).filter(Boolean) : [];
-
-                // GỌI HÀM CẬP NHẬT GIAO DIỆN BÀN PHÍM HOST NGAY LẬP TỨC
                 renderKeyboardStatus(boardStateCache.revealed_chars);
             }
 
             if (newData.pending_positions !== undefined) boardStateCache.pending_positions = parsePosList(newData.pending_positions);
             if (newData.marked_positions !== undefined) boardStateCache.marked_positions = parsePosList(newData.marked_positions);
             if (newData.revealed_positions !== undefined) boardStateCache.revealed_positions = parsePosList(newData.revealed_positions);
-
-            // --- THÊM LOGIC ĐỒNG BỘ Ô GIẢI MÃ ---
             if (newData.decoding_positions !== undefined) boardStateCache.decoding_positions = parsePosList(newData.decoding_positions);
 
             if (newData.is_full_reveal !== undefined) boardStateCache.is_full_reveal = newData.is_full_reveal;
             if (newData.border_color !== undefined) boardStateCache.border_color = newData.border_color;
 
-            // Cập nhật trạng thái chuông vào Cache
             if (newData.buzzer_player !== undefined) boardStateCache.buzzer_player = newData.buzzer_player;
 
             if (newData.score_red_round !== undefined) boardStateCache.score_red_round = newData.score_red_round;
@@ -818,10 +786,8 @@
             if (newData.score_blue_round !== undefined) boardStateCache.score_blue_round = newData.score_blue_round;
             if (newData.score_blue_total !== undefined) boardStateCache.score_blue_total = newData.score_blue_total;
 
-            // --- 2. KẾT XUẤT THÔNG TIN CHUNG ---
             document.getElementById('st-round').innerText = boardStateCache.round_name || "-";
             document.getElementById('st-cat').innerText = boardStateCache.category || "-";
-            document.getElementById('st-puz').innerText = boardStateCache.board_layout.length ? getPuzzleStringWithSpaces(boardStateCache.board_layout) : (boardStateCache.puzzle_text || "-");
             const catUpper = String(boardStateCache.category || "").toUpperCase();
             const isTungHoanh = catUpper.includes('TUNG HOÀNH') || catUpper.includes('TUNG HOANH');
 
@@ -829,11 +795,9 @@
                 ? getPuzzleStringWithSpaces(boardStateCache.board_layout, isTungHoanh)
                 : (boardStateCache.puzzle_text || "-");
 
-            // Hiển thị số ô sử dụng và số ô có ký tự đặc biệt từ cache
             document.getElementById('st-used-cells').innerText = boardStateCache.usedCells || "-";
             document.getElementById('st-special-cells').innerText = boardStateCache.specialCells || "-";
 
-            // --- 3. ĐỒNG BỘ BẢNG ĐIỂM ---
             const format = (num) => (num || 0).toLocaleString('vi-VN');
             document.getElementById('host-red-round').innerText = format(boardStateCache.score_red_round);
             document.getElementById('host-red-total').innerText = format(boardStateCache.score_red_total);
@@ -842,10 +806,8 @@
             document.getElementById('host-blue-round').innerText = format(boardStateCache.score_blue_round);
             document.getElementById('host-blue-total').innerText = format(boardStateCache.score_blue_total);
 
-            // --- 4. ĐỒNG BỘ BÀN PHÍM (Ẩn chữ cái đã đoán) ---
             renderKeyboardStatus(boardStateCache.revealed_chars);
 
-            // --- 5. ĐỒNG BỘ SỐ Ô VÀ VỊ TRÍ ---
             const pendingList = boardStateCache.pending_positions || [];
             const markedList = boardStateCache.marked_positions || [];
             const displayPositions = pendingList.length > 0 ? pendingList : markedList;
@@ -867,16 +829,15 @@
                 });
             }
 
-            // --- 6. KẾT XUẤT PUZZLEBOARD LIVE ---
             const markedSet = new Set(markedList);
             const revealedPosSet = new Set(boardStateCache.revealed_positions);
-            const decodingSet = new Set(boardStateCache.decoding_positions); // Tập hợp ô giải mã từ Database
+            const decodingSet = new Set(boardStateCache.decoding_positions);
 
             document.querySelectorAll('.cell').forEach(c => {
                 c.className = 'cell';
                 c.innerText = '';
-                c.style.backgroundImage = ''; // Reset ảnh nền giải mã
-                c.style.backgroundColor = ''; // Reset màu nền
+                c.style.backgroundImage = '';
+                c.style.backgroundColor = '';
             });
 
             if (Array.isArray(boardStateCache.board_layout)) {
@@ -886,7 +847,6 @@
                         const target = document.getElementById(`cell-${rIdx}-${cIdx}`);
                         if (!target) return;
 
-                        // Xử lý dữ liệu ô chữ nếu ô chứa dạng Object {char: 'A'} hoặc chuỗi thường 'A'
                         let char = (cellData && typeof cellData === 'object') ? cellData.char : cellData;
                         const isDecoding = (cellData && typeof cellData === 'object') ? !!cellData.isDecoding : false;
                         if (!char || String(char).trim() === "") return;
@@ -895,17 +855,14 @@
                         const pos = rcToPosition(rIdx, cIdx);
                         const isDecodingCell = (pos != null && (decodingSet.has(pos) || isDecoding));
 
-                        // Đưa ô chữ vào trạng thái hoạt động (có chữ)
                         target.classList.add('active');
 
-                        // 1. Nếu là Ô GIẢI MÃ và đã được kích hoạt mở công khai
                         if (isDecodingCell && pos != null && revealedPosSet.has(pos)) {
                             target.classList.add('revealed');
                             target.innerText = removeToneMarks(ch);
                             target.style.backgroundImage = 'none';
                             target.style.backgroundColor = 'white';
                         }
-                        // 2. Nếu là Ô GIẢI MÃ nhưng chưa lật (Giữ ẩn tuyệt đối, hiện hình Giải mã.png)
                         else if (isDecodingCell) {
                             target.className = 'cell decoding';
                             target.innerText = '';
@@ -915,29 +872,23 @@
                             target.style.backgroundRepeat = 'no-repeat';
                             target.style.backgroundColor = '#ffcc00';
                         }
-                        // 3. Nếu đang bật nút HIỆN TOÀN BỘ Ô CHỮ (Hiện chữ nguyên bản có dấu gốc)
                         else if (boardStateCache.is_full_reveal) {
                             target.classList.add('revealed');
-                            target.innerText = ch; // Hiện chữ gốc có dấu chuẩn xác
+                            target.innerText = ch;
                             target.style.backgroundImage = 'none';
                             target.style.backgroundColor = 'white';
                         }
-                        // 4. Nếu là ô thường và đã lật theo vị trí cụ thể (Áp dụng cho quy trình lật hoặc nhập tay từ Controller)
                         else if (pos != null && revealedPosSet.has(pos)) {
                             target.classList.add('revealed');
                             target.innerText = removeToneMarks(ch);
                             target.style.backgroundImage = 'none';
                             target.style.backgroundColor = 'white';
                         }
-                        // 5. Nếu ô chữ đang được bôi màu đánh dấu nhấp nháy (Giai đoạn 2 của quy trình)
                         else if (pos != null && markedSet.has(pos)) {
                             target.classList.add('marked');
                         }
-                        // 6. Nếu chữ cái này nằm trong danh sách đoán từ bàn phím chữ cái
                         else {
                             const cleanChar = removeToneMarks(ch).toUpperCase();
-                            // Bắt buộc phải có điều kiện (pos !== null && revealedPosSet.has(pos)) để ép mở đúng vị trí,
-                            // Chặn đứng hoàn toàn lỗi tự động lật lan truyền các chữ cái giống nhau.
                             if (Array.isArray(boardStateCache.revealed_chars) && boardStateCache.revealed_chars.includes(cleanChar) && pos != null && revealedPosSet.has(pos)) {
                                 target.classList.add('revealed');
                                 target.innerText = removeToneMarks(ch);
@@ -949,7 +900,6 @@
                 });
             }
 
-            // --- 7. ĐỒNG BỘ MÀU VIỀN ---
             if (boardStateCache.border_color) {
                 const container = document.getElementById('puzzle-main-container');
                 if (container) {
@@ -961,10 +911,8 @@
                 if (board) board.style.boxShadow = `0 0 60px ${boardStateCache.border_color}`;
             }
 
-            // --- 8. ĐỒNG BỘ TRẠNG THÁI BẤM CHUÔNG ---
             updateBuzzerUI(boardStateCache.buzzer_player);
 
-            // --- 9. ĐỒNG BỘ ĐỒNG HỒ ---
             const timerDisplay = document.getElementById('host-timer');
             if (timerDisplay && newData.timer !== undefined) {
                 timerDisplay.innerText = newData.timer || '0';
@@ -978,7 +926,6 @@
 
             if (!ind1 || !ind2 || !ind3) return;
 
-            // Reset về mặc định
             ind1.className = 'buzzer-indicator';
             ind2.className = 'buzzer-indicator';
             ind3.className = 'buzzer-indicator';
@@ -990,6 +937,7 @@
             else if (p === 2) ind2.classList.add('active-p2');
             else if (p === 3) ind3.classList.add('active-p3');
         }
+
         async function init() {
             createBoard();
             renderKeyboardStatus([]);
@@ -998,7 +946,6 @@
             if (data) {
                 if ('buzzer_player' in data) lastBuzzerState = data.buzzer_player;
 
-                // Lấy tín hiệu âm thanh ban đầu khi vừa tải trang lên
                 if (data.current_sound) {
                     lastPlayedSignal = data.current_sound;
                 }
@@ -1015,12 +962,10 @@
             }, payload => {
                 const newData = payload.new;
 
-                // --- ĐỒNG BỘ ÂM THANH TỪ SOUNDBOARD TỚI HOST ---
                 if ('current_sound' in newData) {
                     handleSoundSync(newData.current_sound);
                 }
 
-                // --- LOGIC PHÁT CHUÔNG GIÀNH QUYỀN (GIỮ NGUYÊN) ---
                 if ('buzzer_player' in newData) {
                     const bp = newData.buzzer_player;
                     const n = (bp === null || bp === undefined || bp === '' || bp === 0) ? null : Number(bp);
@@ -1038,7 +983,6 @@
                 applyLightStyles(newData);
             }).subscribe();
 
-            // Poll timer every second to ensure synchronization
             setInterval(async () => {
                 try {
                     const { data } = await db.from('wheel_game').select('timer').eq('room_id', getRoomFilterValue()).maybeSingle();
@@ -1074,7 +1018,6 @@
                 blue: data.light_blue || 'color'
             };
 
-            // Bảng màu chuẩn theo đúng CSS gốc (.red, .yellow, .blue) trong file Host.html của bạn
             const defaultStyles = {
                 red: { bg: '#ff0000', color: '#ffffff', labelColor: '#ffffff' },
                 yellow: { bg: '#ffff00', color: '#000000', labelColor: '#000000' },
@@ -1082,18 +1025,15 @@
             };
 
             ['red', 'yellow', 'blue'].forEach(color => {
-                // Tìm thẻ card cha của từng người chơi
                 const card = document.querySelector(`.player-score-card.${color}`);
                 if (!card) return;
 
-                // Tìm tất cả các ô score-sub-box bên trong card đó (gồm cả Điểm Vòng và Điểm Tổng)
                 const subBoxes = card.querySelectorAll('.score-sub-box');
 
                 subBoxes.forEach(el => {
                     if (lights[color] === 'black') {
                         el.style.setProperty('background', '#000000', 'important');
                         el.style.setProperty('color', '#ffffff', 'important');
-                        // Thay đổi màu label "ĐIỂM VÒNG" và "ĐIỂM TỔNG" thành trắng
                         const label = el.querySelector('label');
                         if (label) {
                             label.style.setProperty('color', '#ffffff', 'important');
@@ -1101,16 +1041,13 @@
                     } else if (lights[color] === 'white') {
                         el.style.setProperty('background', '#ffffff', 'important');
                         el.style.setProperty('color', '#000000', 'important');
-                        // Thay đổi màu label "ĐIỂM VÒNG" và "ĐIỂM TỔNG" thành đen
                         const label = el.querySelector('label');
                         if (label) {
                             label.style.setProperty('color', '#000000', 'important');
                         }
                     } else {
-                        // Trả về màu sậm nguyên bản của gameshow như thiết lập CSS ban đầu
                         el.style.setProperty('background', defaultStyles[color].bg, 'important');
                         el.style.setProperty('color', defaultStyles[color].color, 'important');
-                        // Trả về màu label gốc
                         const label = el.querySelector('label');
                         if (label) {
                             label.style.setProperty('color', defaultStyles[color].labelColor, 'important');
@@ -1120,7 +1057,6 @@
             });
         }
 
-        // Bảo mật hệ thống Host View
         document.addEventListener('contextmenu', e => e.preventDefault());
         document.addEventListener('keydown', e => {
             if (e.keyCode === 123) e.preventDefault();
