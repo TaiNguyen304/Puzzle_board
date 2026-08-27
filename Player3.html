@@ -283,7 +283,7 @@
 
         #buzzer-btn.open:hover {
             background: orange;
-            color: #fff;
+            color: #000;
             border-color: orange;
         }
 
@@ -294,7 +294,7 @@
             width: 70px;
             height: 70px;
             background: #ff00cc;
-            color: #fff;
+            color: #000;
             font-size: 2rem;
             border-radius: 0px;
             font-weight: 900;
@@ -613,7 +613,7 @@
         const updateBuzzerUI = (data) => {
             const buzzedPlayer = data.buzzer_player;
             const isLocked = data.is_buzzer_locked || false;
-            const PLAYER_ID = 1;
+            const allowedPlayer = data.buzzer_allowed_player;
             const buzzerBtn = document.getElementById('buzzer-btn');
             const side1 = document.getElementById('side-score-1');
             const side2 = document.getElementById('side-score-2');
@@ -638,11 +638,16 @@
                 if (buzzedPlayer == 3 && side3) side3.classList.add('buzzed-blue');
 
             } else {
-                // 4. Khi buzzer_player là null (reset chuông)
+                // 4. Khi buzzer_player là null hoặc rỗng (reset chuông)
+                let isPlayerLocked = isLocked;
+                if (allowedPlayer && allowedPlayer !== 'all' && allowedPlayer !== '' && String(allowedPlayer) !== String(PLAYER_ID)) {
+                    isPlayerLocked = true;
+                }
+
                 if (buzzerBtn) {
-                    buzzerBtn.className = isLocked ? 'locked' : 'open';
-                    buzzerBtn.disabled = isLocked;
-                    buzzerBtn.innerText = isLocked ? 'ĐANG KHÓA' : 'BẤM CHUÔNG';
+                    buzzerBtn.className = isPlayerLocked ? 'locked' : 'open';
+                    buzzerBtn.disabled = isPlayerLocked;
+                    buzzerBtn.innerText = isPlayerLocked ? 'ĐANG KHÓA' : 'BẤM CHUÔNG';
                 }
             }
         };

@@ -98,7 +98,7 @@
 
         button:hover:not(:disabled) {
             background: orange !important;
-            color: white !important;
+            color: black !important;
             transform: scale(1.02);
         }
 
@@ -422,11 +422,11 @@
 
             <p style="color:var(--pink); margin: 15px 0 5px 0; font-size: 0.8rem;">CÂU HỎI PHỤ VÒNG ĐẶC BIỆT:</p>
             <div class="grid-buttons">
-                <button style="background: #ff00cc; color: white;" onclick="handleRound('ĐB5.1', true)">ĐB 5.1</button>
-                <button style="background: #ff00cc; color: white;" onclick="handleRound('ĐB5.2', false)">ĐB 5.2</button>
-                <button style="background: #ff00cc; color: white;" onclick="handleRound('ĐB5.3', false)">ĐB 5.3</button>
-                <button style="background: #ff00cc; color: white;" onclick="handleRound('ĐB5.4', false)">ĐB 5.4</button>
-                <button style="background: #ff00cc; color: white;" onclick="handleRound('ĐB5.5', false)">ĐB 5.5</button>
+                <button style="background: #ff00cc; color: black;" onclick="handleRound('ĐB5.1', true)">ĐB 5.1</button>
+                <button style="background: #ff00cc; color: black;" onclick="handleRound('ĐB5.2', false)">ĐB 5.2</button>
+                <button style="background: #ff00cc; color: black;" onclick="handleRound('ĐB5.3', false)">ĐB 5.3</button>
+                <button style="background: #ff00cc; color: black;" onclick="handleRound('ĐB5.4', false)">ĐB 5.4</button>
+                <button style="background: #ff00cc; color: black;" onclick="handleRound('ĐB5.5', false)">ĐB 5.5</button>
             </div>
 
             <p style="color:var(--pink); margin: 15px 0 5px 0; font-size: 0.8rem;">ĐIỀU KHIỂN CHUÔNG TÍN HIỆU:</p>
@@ -434,6 +434,62 @@
                 <button style="background: aqua; color: black;" onclick="openBuzzer()">Mở chuông</button>
                 <button style="background: aqua; color: black;" onclick="lockBuzzer()">Khóa chuông</button>
                 <button style="background: aqua; color: black;" onclick="resetBuzzer()">Reset chuông</button>
+            </div>
+
+            <!-- MỤC CÂU HỎI PHỤ VÒNG ĐẶC BIỆT (ĐB 5.1 - ĐB 5.5) -->
+            <div id="db5-special-panel"
+                style="display:none; margin-top:15px; border: 2px solid #ff00cc; padding: 12px; background: #1a1a1a; border-radius: 6px;">
+                <p style="color:var(--pink); margin:0 0 10px 0; font-size:0.85rem; text-transform: uppercase;">CÂU HỎI PHỤ VÒNG ĐẶC BIỆT (ĐB 5.1 - 5.5):</p>
+                
+                <!-- Chọn Player được mở chuông -->
+                <div style="margin-bottom: 12px;">
+                    <label style="color:var(--neon); font-size:0.8rem; display:block; margin-bottom:5px;">CHỌN PLAYER ĐƯỢC MỞ CHUÔNG:</label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="db5-player-select" style="flex: 1; padding: 8px; background: #000; color: #fff; border: 1px solid #555; border-radius: 4px; font-weight: bold;">
+                            <option value="1">Player 1 (Đỏ)</option>
+                            <option value="2">Player 2 (Vàng)</option>
+                            <option value="3">Player 3 (Xanh)</option>
+                        </select>
+                        <button id="btn-confirm-db5-player" onclick="confirmDb5Player()"
+                            style="background: rgb(0, 128, 0); color: #ffffff; padding: 8px 15px; font-size: 0.85rem; border-radius: 4px; font-weight: bold !important; cursor: pointer; border: none;">
+                            XÁC NHẬN
+                        </button>
+                    </div>
+                    <div id="db5-selected-player-status" style="margin-top: 5px; font-size: 0.75rem; color: #ffff00;">Đang chọn: Player 1 (Đỏ)</div>
+                </div>
+
+                <!-- 4 nút chức năng + Nút Reset bảng trống -->
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Đặt thời gian (Màu ff0000, chữ trắng) -->
+                    <button onclick="db5SetTimer45()"
+                        style="background: #ff0000; color: #ffffff; width: 100%; padding: 10px; font-size: 0.85rem; border-radius: 4px; font-weight: bold !important; border: none; cursor: pointer;">
+                        ĐẶT THỜI GIAN
+                    </button>
+
+                    <!-- Mở chữ NGHIA và ngẫu nhiên (Màu ffff00, chữ đen) -->
+                    <button onclick="db5RevealNghiaAndRandom()"
+                        style="background: #ffff00; color: #000000; width: 100%; padding: 10px; font-size: 0.85rem; border-radius: 4px; font-weight: bold !important; border: none; cursor: pointer;">
+                        MỞ CHỮ NGHIA VÀ NGẪU NHIÊN
+                    </button>
+
+                    <!-- Dừng hiện chữ (Màu 0000ff, chữ trắng) -->
+                    <button onclick="db5Stop()"
+                        style="background: #0000ff; color: #ffffff; width: 100%; padding: 10px; font-size: 0.85rem; border-radius: 4px; font-weight: bold !important; border: none; cursor: pointer;">
+                        DỪNG HIỆN CHỮ
+                    </button>
+
+                    <!-- Tiếp tục hiện chữ (Màu 800080, chữ trắng) -->
+                    <button onclick="db5Resume()"
+                        style="background: #800080; color: #ffffff; width: 100%; padding: 10px; font-size: 0.85rem; border-radius: 4px; font-weight: bold !important; border: none; cursor: pointer;">
+                        TIẾP TỤC HIỆN CHỮ
+                    </button>
+
+                    <!-- Reset bảng trống (Màu ff00cc, chữ đen) -->
+                    <button onclick="db5ResetBoard()"
+                        style="background: #ff00cc; color: #000000; width: 100%; padding: 10px; font-size: 0.85rem; border-radius: 4px; margin-top: 4px; font-weight: bold !important; border: none; cursor: pointer;">
+                        RESET BẢNG TRỐNG
+                    </button>
+                </div>
             </div>
 
             <button id="btn-ngiah" onclick="revealNghia()"
@@ -1203,6 +1259,11 @@
             }
         });
 
+        function isDb5Round(name) {
+            const n = String(name || "").toLowerCase().replace(/\s+/g, '');
+            return n.includes('đb5.') || n.includes('db5.') || n.includes('đb5') || n.includes('db5');
+        }
+
         function handleRound(roundName, hasPopup) {
             selectedRoundName = roundName;
             currentRoundData = excelData.find(d => String(d.Vong).toLowerCase().includes(roundName.toLowerCase()));
@@ -1211,12 +1272,15 @@
                 return;
             }
 
-            const isQuick = ["Đoán Nhanh", "ĐNLH"].some(t => roundName.includes(t)) || roundName.includes('ĐB5.');
+            const isDb5 = isDb5Round(roundName);
+            const isQuick = !isDb5 && ["Đoán Nhanh", "ĐNLH"].some(t => roundName.includes(t));
             const rnLower = roundName.toLowerCase();
-            const isSpecialRound = rnLower.includes('vòng đặc biệt') || rnLower.includes('vòng phụ') || roundName.includes('ĐB');
-            const isSpecialRoundOnly = rnLower.includes('vòng đặc biệt') || rnLower.includes('vòng phụ');
+            const isSpecialRound = !isDb5 && (rnLower.includes('vòng đặc biệt') || rnLower.includes('vòng phụ') || roundName.includes('ĐB'));
+            const isSpecialRoundOnly = !isDb5 && (rnLower.includes('vòng đặc biệt') || rnLower.includes('vòng phụ'));
 
             document.getElementById('quick-panel').style.display = isQuick ? 'block' : 'none';
+            const db5Panel = document.getElementById('db5-special-panel');
+            if (db5Panel) db5Panel.style.display = isDb5 ? 'block' : 'none';
             document.getElementById('btn-ngiah').style.display = isSpecialRound ? 'block' : 'none';
             document.getElementById('special-guess-panel').style.display = isSpecialRound ? 'block' : 'none';
             document.getElementById('special-round-timer-panel').style.display = isSpecialRoundOnly ? 'block' : 'none';
@@ -1395,30 +1459,234 @@
             await db.from('wheel_game').update({ pending_positions: '' }).eq('room_id', currentRoomId);
         }
 
-        async function quickStart() {
-            if (selectedRoundName && selectedRoundName.includes('ĐB5.')) {
-                await db.from('wheel_game').update({
-                    revealed_positions: "",
-                    marked_positions: "",
-                    pending_positions: "",
-                    revealed_chars: "",
-                    is_buzzer_locked: false,
-                    buzzer_player: "",
-                    border_color: 'rgb(128,0,128)'
-                }).eq('room_id', currentRoomId);
-                usedChars = [];
-                renderKeyboard();
+        let selectedDb5Player = "1";
 
-                await revealNghia();
-
-                setTimeout(() => {
-                    quickResume();
-                }, 1500);
-            } else {
-                usedChars = [];
-                await db.from('wheel_game').update({ revealed_chars: "", pending_positions: "" }).eq('room_id', currentRoomId);
-                quickResume();
+        function confirmDb5Player() {
+            const sel = document.getElementById('db5-player-select');
+            if (sel) {
+                selectedDb5Player = sel.value;
+                const playerNames = { "1": "Player 1 (Đỏ)", "2": "Player 2 (Vàng)", "3": "Player 3 (Xanh)" };
+                const statusEl = document.getElementById('db5-selected-player-status');
+                if (statusEl) {
+                    statusEl.innerText = `Đã xác nhận: ${playerNames[selectedDb5Player] || 'Player ' + selectedDb5Player}`;
+                }
+                showPopup("Xác nhận", `Đã chọn ${playerNames[selectedDb5Player] || 'Player ' + selectedDb5Player} được mở chuông.`);
             }
+        }
+
+        async function db5SetTimer45() {
+            countdownValue = 45;
+            document.getElementById('st-timer').innerText = countdownValue;
+            stopCountdown();
+            await db.from('wheel_game').update({ timer: countdownValue }).eq('room_id', currentRoomId);
+        }
+
+        async function db5RevealNghiaAndRandom() {
+            if (!currentLayout) return;
+            if (quickInterval) clearInterval(quickInterval);
+
+            // 1. Tìm vị trí các chữ cái N, G, H, I, A
+            const targetChars = ['N', 'G', 'H', 'I', 'A'];
+            let nghiaPositions = [];
+
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 14; c++) {
+                    let cellData = currentLayout[r][c];
+                    let cellChar = "";
+                    let isDecoding = false;
+                    if (cellData && typeof cellData === 'object') {
+                        cellChar = cellData.char;
+                        isDecoding = !!cellData.isDecoding;
+                    } else {
+                        cellChar = cellData;
+                    }
+                    if (isDecoding) continue;
+
+                    if (cellChar) {
+                        if (cellChar === 'Ă' || cellChar === 'Â') continue;
+                        let norm = cellChar.normalize('NFD')
+                            .replace(/[̣̀́̃̉]/g, '')
+                            .normalize('NFC')
+                            .toUpperCase();
+                        if (targetChars.includes(norm)) {
+                            let pos = rcToPosition(r, c);
+                            if (pos && !nghiaPositions.includes(pos)) nghiaPositions.push(pos);
+                        }
+                    }
+                }
+            }
+
+            // Lấy revealed_positions hiện tại và thêm các vị trí NGHIA vào
+            const { data: row } = await db.from('wheel_game').select('revealed_positions').eq('room_id', currentRoomId).maybeSingle();
+            let revPos = (row && row.revealed_positions) ? row.revealed_positions.split(',').filter(Boolean).map(Number) : [];
+
+            nghiaPositions.forEach(p => {
+                if (!revPos.includes(p)) revPos.push(p);
+            });
+
+            targetChars.forEach(char => {
+                if (!usedChars.includes(char)) usedChars.push(char);
+            });
+            renderKeyboard();
+
+            // Mở chuông cho player được chọn, đồng thời mở NGHIA, tiếp tục đếm ngược thời gian
+            await db.from('wheel_game').update({
+                revealed_positions: revPos.join(','),
+                marked_positions: '',
+                pending_positions: '',
+                revealed_chars: usedChars.join(','),
+                buzzer_allowed_player: String(selectedDb5Player || "1"),
+                is_buzzer_locked: false,
+                buzzer_player: "",
+                border_color: 'rgb(128,0,128)'
+            }).eq('room_id', currentRoomId);
+
+            // Bắt đầu đếm ngược thời gian tiếp tục
+            startCountdown();
+
+            // Bắt đầu lật ngẫu nhiên các chữ cái còn lại
+            quickInterval = setInterval(async () => {
+                const { data } = await db.from('wheel_game').select('revealed_positions').eq('room_id', currentRoomId).single();
+                let curRev = data && data.revealed_positions ? data.revealed_positions.split(',').filter(Boolean).map(Number) : [];
+
+                let availablePositions = [];
+                for (let r = 0; r < 4; r++) {
+                    for (let c = 0; c < 14; c++) {
+                        let cellData = currentLayout[r][c];
+                        let char = (cellData && typeof cellData === 'object') ? cellData.char : cellData;
+                        let isDecoding = (cellData && typeof cellData === 'object') ? !!cellData.isDecoding : false;
+                        if (isDecoding) continue;
+
+                        if (char && char.trim() !== "") {
+                            let pos = rcToPosition(r, c);
+                            if (pos && !curRev.includes(pos)) {
+                                availablePositions.push(pos);
+                            }
+                        }
+                    }
+                }
+
+                if (availablePositions.length === 0) {
+                    clearInterval(quickInterval);
+                    quickInterval = null;
+                    return;
+                }
+
+                const randomPos = availablePositions[Math.floor(Math.random() * availablePositions.length)];
+                curRev.push(randomPos);
+
+                await db.from('wheel_game').update({
+                    revealed_positions: curRev.join(',')
+                }).eq('room_id', currentRoomId);
+            }, 700);
+        }
+
+        function db5Stop() {
+            if (quickInterval) {
+                clearInterval(quickInterval);
+                quickInterval = null;
+            }
+            stopCountdown();
+        }
+
+        async function db5Resume() {
+            if (quickInterval) clearInterval(quickInterval);
+
+            // 1. Khung bảng ô chữ trở về màu trắng
+            // 4. Chuông của Player được chọn được mở lại
+            await db.from('wheel_game').update({
+                border_color: 'rgb(255,255,255)',
+                buzzer_allowed_player: String(selectedDb5Player || "1"),
+                is_buzzer_locked: false,
+                buzzer_player: ""
+            }).eq('room_id', currentRoomId);
+
+            // 3. Đồng hồ tính tiếp số thời gian còn lại
+            startCountdown();
+
+            // 2. Các chữ cái còn lại tiếp tục lần lượt được lật mở
+            quickInterval = setInterval(async () => {
+                const { data } = await db.from('wheel_game').select('revealed_positions').eq('room_id', currentRoomId).single();
+                let curRev = data && data.revealed_positions ? data.revealed_positions.split(',').filter(Boolean).map(Number) : [];
+
+                let availablePositions = [];
+                for (let r = 0; r < 4; r++) {
+                    for (let c = 0; c < 14; c++) {
+                        let cellData = currentLayout[r][c];
+                        let char = (cellData && typeof cellData === 'object') ? cellData.char : cellData;
+                        let isDecoding = (cellData && typeof cellData === 'object') ? !!cellData.isDecoding : false;
+                        if (isDecoding) continue;
+
+                        if (char && char.trim() !== "") {
+                            let pos = rcToPosition(r, c);
+                            if (pos && !curRev.includes(pos)) {
+                                availablePositions.push(pos);
+                            }
+                        }
+                    }
+                }
+
+                if (availablePositions.length === 0) {
+                    clearInterval(quickInterval);
+                    quickInterval = null;
+                    return;
+                }
+
+                const randomPos = availablePositions[Math.floor(Math.random() * availablePositions.length)];
+                curRev.push(randomPos);
+
+                await db.from('wheel_game').update({
+                    revealed_positions: curRev.join(',')
+                }).eq('room_id', currentRoomId);
+            }, 700);
+        }
+
+        async function db5ResetBoard() {
+            if (quickInterval) {
+                clearInterval(quickInterval);
+                quickInterval = null;
+            }
+            stopCountdown();
+
+            // Reset bảng về trống, đổi khung viền về màu trắng, KHÔNG RESET THỜI GIAN, khóa chuông của Player
+            await db.from('wheel_game').update({
+                puzzle_text: "",
+                category: "",
+                revealed_chars: "",
+                pending_positions: "",
+                marked_positions: "",
+                revealed_positions: "",
+                board_layout: "[]",
+                is_full_reveal: false,
+                decoding_positions: "",
+                border_color: 'rgb(255,255,255)',
+                is_buzzer_locked: true,
+                buzzer_player: ""
+            }).eq('room_id', currentRoomId);
+
+            usedChars = [];
+            currentLayout = null;
+            currentPuzzleRaw = "";
+            document.getElementById('st-puz').innerText = "-";
+            document.getElementById('st-cat').innerText = "-";
+            renderKeyboard();
+        }
+
+        async function quickStart() {
+            if (quickInterval) clearInterval(quickInterval);
+            usedChars = [];
+            await db.from('wheel_game').update({
+                revealed_positions: "",
+                marked_positions: "",
+                pending_positions: "",
+                revealed_chars: "",
+                buzzer_allowed_player: 'all',
+                is_buzzer_locked: false,
+                buzzer_player: "",
+                border_color: 'rgb(128,0,128)'
+            }).eq('room_id', currentRoomId);
+            renderKeyboard();
+            quickResume();
         }
 
         function quickStop() {
@@ -1429,24 +1697,28 @@
         async function quickResume() {
             if (quickInterval) clearInterval(quickInterval);
 
-            if (selectedRoundName && selectedRoundName.includes('ĐB5.')) {
-                await db.from('wheel_game').update({
-                    is_buzzer_locked: false,
-                    buzzer_player: "",
-                    border_color: 'rgb(128,0,128)'
-                }).eq('room_id', currentRoomId);
+            // Khung bảng ô chữ trở về màu tím, chuông của cả 3 người chơi được mở lại
+            await db.from('wheel_game').update({
+                buzzer_allowed_player: 'all',
+                is_buzzer_locked: false,
+                buzzer_player: "",
+                border_color: 'rgb(128,0,128)'
+            }).eq('room_id', currentRoomId);
 
-                startCountdown();
-            }
+            startCountdown();
 
             quickInterval = setInterval(async () => {
                 const { data } = await db.from('wheel_game').select('revealed_positions').eq('room_id', currentRoomId).single();
-                let revPos = data.revealed_positions ? data.revealed_positions.split(',').map(Number) : [];
+                let revPos = data && data.revealed_positions ? data.revealed_positions.split(',').filter(Boolean).map(Number) : [];
 
                 let availablePositions = [];
                 for (let r = 0; r < 4; r++) {
                     for (let c = 0; c < 14; c++) {
-                        let char = currentLayout[r][c];
+                        let cellData = currentLayout ? currentLayout[r][c] : null;
+                        let char = (cellData && typeof cellData === 'object') ? cellData.char : cellData;
+                        let isDecoding = (cellData && typeof cellData === 'object') ? !!cellData.isDecoding : false;
+                        if (isDecoding) continue;
+
                         if (char && char.trim() !== "") {
                             let pos = rcToPosition(r, c);
                             if (pos && !revPos.includes(pos)) {
@@ -1458,6 +1730,7 @@
 
                 if (availablePositions.length === 0) {
                     clearInterval(quickInterval);
+                    quickInterval = null;
                     return;
                 }
 
