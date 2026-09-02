@@ -567,6 +567,9 @@
             }
             else {
                 const audio = new Audio(soundFile);
+                if (['30s_vđb_2005.wav', '30s.mp3', 'think.mp3', '10s_2.mp3', '10s.mp3', 'tossup.mp3', 'express_2.mp3', 'speed_up.mp3', 'nghia.mp3', '3l.mp3'].includes(soundFile)) {
+                    audio.volume = 0.3;
+                }
                 activeAudios.push(audio);
 
                 audio.onended = () => {
