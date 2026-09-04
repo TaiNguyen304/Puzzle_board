@@ -69,7 +69,7 @@
         /* Style cho ô đồng hồ bên cạnh ô màu xanh */
         .score-box.timer-box {
             background: #ff00ff;
-            color: #000000;
+            color: #000000 !important;
             transition: background 0.3s ease, color 0.3s ease;
             margin-bottom: 20px;
         }
@@ -355,7 +355,7 @@
 
             timerBox.innerText = seconds;
             timerBox.style.setProperty('background', '#ff00ff', 'important');
-            timerBox.style.setProperty('color', '#ffffff', 'important');
+            timerBox.style.setProperty('color', '#000000', 'important');
         }
 
         function handleTimerSync(dbTimer, dbTimerRunning) {
