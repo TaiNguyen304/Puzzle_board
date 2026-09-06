@@ -3,91 +3,268 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Scoreboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scoreboard - Chiếc Nón Kỳ Diệu</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        @font-face {
+            font-family: 'NVA-SF Fortune Wheel';
+            src: url('NVA-SF Fortune Wheel.ttf') format('truetype'),
+                 url('/NVA-SF Fortune Wheel.ttf') format('truetype'),
+                 url('NVA-SF%20Fortune%20Wheel.ttf') format('truetype'),
+                 url('UTM HELVETINS_3.TTF') format('truetype'),
+                 url('/UTM HELVETINS_3.TTF') format('truetype'),
+                 local('NVA-SF Fortune Wheel'),
+                 local('NVA SF Fortune Wheel'),
+                 local('UTM HelvetIns');
+            font-weight: normal;
+            font-style: normal;
+        }
+
         * {
             font-weight: bold !important;
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            user-select: none;
         }
 
-        body {
-            background-color: #800080;
+        html, body {
+            background-color: transparent !important;
+            background: transparent !important;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: relative;
+        }
+
+        #overlay-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+
+        /* SVG Background Layer with Masked Camera Holes */
+        #bg-canvas-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Main UI Container */
+        #main-ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            align-items: stretch;
-            height: 100vh;
-            font-family: 'Segoe UI', sans-serif;
-            overflow: hidden;
+            pointer-events: auto;
         }
 
+        /* Metallic 3D Divider Bar */
+        #divider-bar {
+            width: 100%;
+            height: 3.2vh;
+            min-height: 22px;
+            background: linear-gradient(to bottom, #ffffff 0%, #ececec 18%, #c4c4c4 48%, #8e8e8e 85%, #595959 100%);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.6), inset 0 2px 0 rgba(255, 255, 255, 0.95), inset 0 -2px 3px rgba(0, 0, 0, 0.5);
+            border-top: 1px solid rgba(255, 255, 255, 0.9);
+            border-bottom: 2px solid #222;
+            position: relative;
+            z-index: 5;
+        }
+
+        /* Score & Podium Container */
         #score-container {
             display: flex;
             justify-content: space-around;
             align-items: stretch;
-            gap: 0;
             height: 32vh;
             width: 100%;
+            position: relative;
+            z-index: 4;
         }
 
-        .score-box {
+        .score-podium {
             flex: 1;
+            position: relative;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 5rem;
-            border: none;
-            transition: all 0.3s ease;
-            user-select: none;
+            overflow: hidden;
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.4);
         }
 
-        .score-box.red {
-            background-color: #ff0000;
-            color: #fff;
+        /* Red Podium - Player 1 */
+        .score-podium.red {
+            background: linear-gradient(180deg, #c71526 0%, #a40f1d 50%, #7d0914 100%);
+            border-right: 2px solid rgba(0, 0, 0, 0.35);
         }
 
-        .score-box.yellow {
-            background-color: #ffff00;
-            color: #000;
+        /* Yellow Podium - Player 2 */
+        .score-podium.yellow {
+            background: linear-gradient(180deg, #caa017 0%, #b38b0e 50%, #896707 100%);
+            border-right: 2px solid rgba(0, 0, 0, 0.35);
         }
 
-        .score-box.blue {
-            background-color: #0000ff;
-            color: #fff;
+        /* Blue Podium - Player 3 */
+        .score-podium.blue {
+            background: linear-gradient(180deg, #2294cc 0%, #1a7bb0 50%, #105982 100%);
         }
 
-        audio {
+        /* Subtle Fabric / Noise texture overlay on podiums */
+        .podium-texture {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+                              radial-gradient(rgba(0, 0, 0, 0.15) 1px, transparent 1px);
+            background-size: 4px 4px;
+            background-position: 0 0, 2px 2px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Watermark: CHIẾC NÓN KỲ DIỆU */
+        .watermark-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0.18;
+        }
+
+        .watermark-text {
+            font-family: 'NVA-SF Fortune Wheel', 'UTM HELVETINS_3', 'Impact', sans-serif !important;
+            font-size: clamp(2rem, 3.6vw, 4.2rem);
+            color: #000000;
+            text-shadow: -1px -1px 0 rgba(255, 255, 255, 0.3), 1px 1px 0 rgba(0, 0, 0, 0.4);
+            text-transform: uppercase;
+            text-align: center;
+            line-height: 1.05;
+            letter-spacing: 3px;
+            white-space: nowrap;
+        }
+
+        /* Live Score Value */
+        .score-value {
+            position: relative;
+            z-index: 3;
+            font-family: 'UTM HELVETINS_3', 'Segoe UI', Tahoma, sans-serif !important;
+            font-size: clamp(3.2rem, 6.2vw, 7rem);
+            color: #ffffff;
+            text-shadow: 0 0 15px rgba(0, 0, 0, 0.8), 2px 4px 10px rgba(0, 0, 0, 0.9);
+            letter-spacing: 2px;
+            text-align: center;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        /* Room ID Prompt Badge (Non-intrusive) */
+        #room-status-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ffd700;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            z-index: 99;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 215, 0, 0.4);
             display: none;
         }
 
-        #no-roomid-msg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: #000000;
-            color: #ff0000;
-            font-size: 2rem;
-            font-weight: bold;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 999999;
-            text-align: center;
-            padding: 20px;
+        #room-status-badge.show {
+            display: block;
         }
     </style>
 </head>
 
 <body>
-    <div id="score-container">
-        <div class="score-box red" id="score-red">0</div>
-        <div class="score-box yellow" id="score-yellow">0</div>
-        <div class="score-box blue" id="score-blue">0</div>
+    <div id="room-status-badge">Phòng: <span id="current-room-text">Chưa kết nối (?roomid=...)</span></div>
+
+    <!-- SVG Layer for Purple Background #800080 with Masked Camera Holes (OBS Transparent Cutouts) -->
+    <svg id="bg-canvas-svg" viewBox="0 0 1920 1080" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <!-- Camera Hole Mask: White = Visible background (#800080), Black = 100% Transparent Cutout for Camera -->
+            <mask id="cameraHolesMask">
+                <rect width="1920" height="1080" fill="#ffffff" />
+                <!-- Camera 1 Hole (Player 1) -->
+                <rect x="65" y="270" width="560" height="330" fill="#000000" rx="0" />
+                <!-- Camera 2 Hole (Player 2) -->
+                <rect x="680" y="270" width="560" height="330" fill="#000000" rx="0" />
+                <!-- Camera 3 Hole (Player 3) -->
+                <rect x="1295" y="270" width="560" height="330" fill="#000000" rx="0" />
+            </mask>
+        </defs>
+
+        <!-- 100% Solid #800080 Purple Background with 3 Camera Holes Masked Out -->
+        <g mask="url(#cameraHolesMask)">
+            <rect width="1920" height="1080" fill="#800080" />
+        </g>
+    </svg>
+
+    <!-- Foreground UI: Metallic Divider + 3 Player Podiums -->
+    <div id="main-ui">
+        <!-- 3D Beveled Silver Divider Bar -->
+        <div id="divider-bar"></div>
+
+        <!-- 3 Player Podiums with Watermark & Live Score -->
+        <div id="score-container">
+            <!-- Player 1 (Red) -->
+            <div class="score-podium red" id="podium-red">
+                <div class="podium-texture"></div>
+                <div class="watermark-container">
+                    <div class="watermark-text">CHIẾC NÓN</div>
+                    <div class="watermark-text">KỲ DIỆU</div>
+                </div>
+                <div class="score-value" id="score-red">0</div>
+            </div>
+
+            <!-- Player 2 (Yellow / Gold) -->
+            <div class="score-podium yellow" id="podium-yellow">
+                <div class="podium-texture"></div>
+                <div class="watermark-container">
+                    <div class="watermark-text">CHIẾC NÓN</div>
+                    <div class="watermark-text">KỲ DIỆU</div>
+                </div>
+                <div class="score-value" id="score-yellow">0</div>
+            </div>
+
+            <!-- Player 3 (Blue) -->
+            <div class="score-podium blue" id="podium-blue">
+                <div class="podium-texture"></div>
+                <div class="watermark-container">
+                    <div class="watermark-text">CHIẾC NÓN</div>
+                    <div class="watermark-text">KỲ DIỆU</div>
+                </div>
+                <div class="score-value" id="score-blue">0</div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -96,26 +273,32 @@
         var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const urlParams = new URLSearchParams(window.location.search);
-        const roomId = urlParams.get('roomid');
+        const roomId = urlParams.get('roomid') || urlParams.get('room_id') || urlParams.get('room');
+
+        const roomBadge = document.getElementById('room-status-badge');
+        const roomText = document.getElementById('current-room-text');
 
         if (!roomId) {
-            document.body.innerHTML = '<div id="no-roomid-msg">Vui lòng nhập tham số ?roomid trên URL.</div>';
-            if (typeof init === 'function') init = function () { }; // Chặn hàm init chạy
-            window.onload = null;
-            throw new Error("Thiếu tham số roomid trên URL");
+            if (roomBadge && roomText) {
+                roomBadge.classList.add('show');
+                roomText.innerText = 'Chưa có ?roomid trên URL (Demo mode)';
+            }
+        } else {
+            if (roomText) roomText.innerText = roomId;
         }
 
         function getRoomFilterValue(value = roomId) {
             const normalized = value == null ? "" : String(value).trim();
             return /^\d+$/.test(normalized) ? Number(normalized) : normalized;
         }
-        
+
         function formatScore(num) {
             return (num || 0).toLocaleString('vi-VN');
         }
 
         async function init() {
             const updateScores = (data) => {
+                if (!data) return;
                 const mode = data.score_display_mode || 'round';
 
                 const redEl = document.getElementById('score-red');
@@ -127,22 +310,46 @@
                 if (blueEl) blueEl.innerText = formatScore(data[`score_blue_${mode}`]);
             };
 
-            // Get initial data
-            const { data } = await db.from('wheel_game').select('*').eq('room_id', getRoomFilterValue()).maybeSingle();
-            if (data) {
-                updateScores(data);
-            }
+            if (roomId) {
+                try {
+                    // 1. Get initial data from Supabase
+                    const { data, error } = await db.from('wheel_game')
+                        .select('*')
+                        .eq('room_id', getRoomFilterValue())
+                        .maybeSingle();
 
-            // Listen for real-time updates from Supabase
-            db.channel('scoreboard').on('postgres_changes', {
-                event: 'UPDATE',
-                schema: 'public',
-                table: 'wheel_game',
-                filter: `room_id=eq.${encodeURIComponent(String(roomId))}`
-            }, payload => {
-                const newData = payload.new;
-                updateScores(newData);
-            }).subscribe();
+                    if (!error && data) {
+                        updateScores(data);
+                    }
+
+                    // 2. Real-time subscription
+                    db.channel('scoreboard_realtime').on('postgres_changes', {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'wheel_game',
+                        filter: `room_id=eq.${encodeURIComponent(String(roomId))}`
+                    }, payload => {
+                        const newData = payload.new;
+                        if (newData) updateScores(newData);
+                    }).subscribe();
+
+                    // 3. Fallback sync polling
+                    setInterval(async () => {
+                        try {
+                            const { data: pollData } = await db.from('wheel_game')
+                                .select('*')
+                                .eq('room_id', getRoomFilterValue())
+                                .maybeSingle();
+                            if (pollData) updateScores(pollData);
+                        } catch (e) {
+                            console.error('Scoreboard poll error:', e);
+                        }
+                    }, 2000);
+
+                } catch (err) {
+                    console.error('Scoreboard init error:', err);
+                }
+            }
         }
 
         init();
@@ -150,3 +357,4 @@
 </body>
 
 </html>
+
