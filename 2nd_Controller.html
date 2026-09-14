@@ -1286,27 +1286,27 @@
         }
 
         async function quickStart() {
-            if (selectedRoundName && selectedRoundName.includes('ĐB5.')) {
-                await db.from('wheel_game').update({
-                    revealed_positions: "",
-                    marked_positions: "",
-                    pending_positions: "",
-                    revealed_chars: "",
-                    is_buzzer_locked: false,
-                    buzzer_player: "",
-                    border_color: 'rgb(128,0,128)'
-                }).eq('room_id', currentRoomId);
-                usedChars = [];
-                renderKeyboard();
+            if (quickInterval) clearInterval(quickInterval);
+            usedChars = [];
+            await db.from('wheel_game').update({
+                revealed_positions: "",
+                marked_positions: "",
+                pending_positions: "",
+                revealed_chars: "",
+                buzzer_allowed_player: 'all',
+                is_buzzer_locked: false,
+                buzzer_player: "",
+                border_color: 'rgb(128,0,128)'
+            }).eq('room_id', currentRoomId);
+            renderKeyboard();
 
+            if (selectedRoundName && selectedRoundName.includes('ĐB5.')) {
                 await revealNghia();
 
                 setTimeout(() => {
                     quickResume();
                 }, 1500);
             } else {
-                usedChars = [];
-                await db.from('wheel_game').update({ revealed_chars: "", pending_positions: "" }).eq('room_id', currentRoomId);
                 quickResume();
             }
         }
@@ -1319,15 +1319,14 @@
         async function quickResume() {
             if (quickInterval) clearInterval(quickInterval);
 
-            if (selectedRoundName && selectedRoundName.includes('ĐB5.')) {
-                await db.from('wheel_game').update({
-                    is_buzzer_locked: false,
-                    buzzer_player: "",
-                    border_color: 'rgb(128,0,128)'
-                }).eq('room_id', currentRoomId);
+            await db.from('wheel_game').update({
+                buzzer_allowed_player: 'all',
+                is_buzzer_locked: false,
+                buzzer_player: "",
+                border_color: 'rgb(128,0,128)'
+            }).eq('room_id', currentRoomId);
 
-                startCountdown();
-            }
+            startCountdown();
 
             quickInterval = setInterval(async () => {
                 const { data } = await db.from('wheel_game').select('revealed_positions').eq('room_id', currentRoomId).single();
