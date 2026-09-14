@@ -324,6 +324,20 @@
             color: #ffffff;
         }
 
+        .room-link {
+            color: #00ffff;
+            text-decoration: underline;
+            margin-left: 6px;
+            font-size: 0.85rem;
+            word-break: break-all;
+            text-transform: none !important;
+            display: inline-block;
+        }
+
+        .room-link:hover {
+            color: #ffa500;
+        }
+
         #lockOverlay {
             position: fixed;
             top: 0;
@@ -378,18 +392,31 @@
                 </div>
 
                 <div class="info-line">
+                    <span class="label-green">HOST LINK:</span>
+                    <a id="host-link-val" class="room-link" href="#" target="_blank">-</a>
+                </div>
+
+                <div class="info-line">
+                    <span class="label-green">PUZZLEBOARD LINK:</span>
+                    <a id="puzzle-link-val" class="room-link" href="#" target="_blank">-</a>
+                </div>
+
+                <div class="info-line">
                     <span class="label-green">PLAYER 1 MẬT KHẨU:</span>
                     <span id="p1-pass-val" class="val-white"></span>
+                    <a id="p1-link-val" class="room-link" href="#" target="_blank">-</a>
                 </div>
 
                 <div class="info-line">
                     <span class="label-green">PLAYER 2 MẬT KHẨU:</span>
                     <span id="p2-pass-val" class="val-white"></span>
+                    <a id="p2-link-val" class="room-link" href="#" target="_blank">-</a>
                 </div>
 
                 <div class="info-line">
                     <span class="label-green">PLAYER 3 MẬT KHẨU:</span>
                     <span id="p3-pass-val" class="val-white"></span>
+                    <a id="p3-link-val" class="room-link" href="#" target="_blank">-</a>
                 </div>
             </div>
         </div>
@@ -1805,6 +1832,27 @@
             document.getElementById('p1-pass-val').innerText = passP1;
             document.getElementById('p2-pass-val').innerText = passP2;
             document.getElementById('p3-pass-val').innerText = passP3;
+
+            const hostUrl = `Host.html?roomid=${roomId}`;
+            const puzzleUrl = `Puzzleboard.html?roomid=${roomId}`;
+            const p1Url = `Player1.html?roomid=${roomId}&auth=${passP1}`;
+            const p2Url = `Player2.html?roomid=${roomId}&auth=${passP2}`;
+            const p3Url = `Player3.html?roomid=${roomId}&auth=${passP3}`;
+
+            const hostLink = document.getElementById('host-link-val');
+            if (hostLink) { hostLink.href = hostUrl; hostLink.innerText = hostUrl; }
+
+            const puzzleLink = document.getElementById('puzzle-link-val');
+            if (puzzleLink) { puzzleLink.href = puzzleUrl; puzzleLink.innerText = puzzleUrl; }
+
+            const p1Link = document.getElementById('p1-link-val');
+            if (p1Link) { p1Link.href = p1Url; p1Link.innerText = `[Mở Link P1]`; }
+
+            const p2Link = document.getElementById('p2-link-val');
+            if (p2Link) { p2Link.href = p2Url; p2Link.innerText = `[Mở Link P2]`; }
+
+            const p3Link = document.getElementById('p3-link-val');
+            if (p3Link) { p3Link.href = p3Url; p3Link.innerText = `[Mở Link P3]`; }
 
             document.getElementById('room-info-display').style.display = 'block';
             document.getElementById('lockOverlay').style.display = 'none';
