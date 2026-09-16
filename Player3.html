@@ -614,9 +614,11 @@
         };
 
         const updateBuzzerUI = (data) => {
-            const buzzedPlayer = data.buzzer_player;
-            const isLocked = data.is_buzzer_locked || false;
-            const allowedPlayer = data.buzzer_allowed_player;
+            if (!data) return;
+            const buzzedPlayer = (data.buzzer_player !== null && data.buzzer_player !== undefined && data.buzzer_player !== '' && data.buzzer_player !== 0 && data.buzzer_player !== '0')
+                ? data.buzzer_player
+                : null;
+            const isLocked = (data.is_buzzer_locked === true || data.is_buzzer_locked === 'true' || data.is_buzzer_locked === 1 || data.is_buzzer_locked === '1');
             const buzzerBtn = document.getElementById('buzzer-btn');
             const side1 = document.getElementById('side-score-1');
             const side2 = document.getElementById('side-score-2');
@@ -632,25 +634,20 @@
                 if (buzzerBtn) {
                     buzzerBtn.className = 'locked';
                     buzzerBtn.disabled = true;
-                    buzzerBtn.innerText = (buzzedPlayer == PLAYER_ID) ? 'BẠN ĐÃ BẤM!' : `P${buzzedPlayer} ĐÃ BẤM`;
+                    buzzerBtn.innerText = (String(buzzedPlayer) === String(PLAYER_ID)) ? 'BẠN ĐÃ BẤM!' : `P${buzzedPlayer} ĐÃ BẤM`;
                 }
 
                 // 3. Kích hoạt màu dựa trên giá trị buzzedPlayer (so sánh tương đối ==)
-                if (buzzedPlayer == 1 && side1) side1.classList.add('buzzed-red');
-                if (buzzedPlayer == 2 && side2) side2.classList.add('buzzed-yellow');
-                if (buzzedPlayer == 3 && side3) side3.classList.add('buzzed-blue');
+                if ((buzzedPlayer == 1 || buzzedPlayer === 'red') && side1) side1.classList.add('buzzed-red');
+                if ((buzzedPlayer == 2 || buzzedPlayer === 'yellow') && side2) side2.classList.add('buzzed-yellow');
+                if ((buzzedPlayer == 3 || buzzedPlayer === 'blue') && side3) side3.classList.add('buzzed-blue');
 
             } else {
                 // 4. Khi buzzer_player là null hoặc rỗng (reset chuông)
-                let isPlayerLocked = isLocked;
-                if (allowedPlayer && allowedPlayer !== 'all' && allowedPlayer !== '' && String(allowedPlayer) !== String(PLAYER_ID)) {
-                    isPlayerLocked = true;
-                }
-
                 if (buzzerBtn) {
-                    buzzerBtn.className = isPlayerLocked ? 'locked' : 'open';
-                    buzzerBtn.disabled = isPlayerLocked;
-                    buzzerBtn.innerText = isPlayerLocked ? 'ĐANG KHÓA' : 'BẤM CHUÔNG';
+                    buzzerBtn.className = isLocked ? 'locked' : 'open';
+                    buzzerBtn.disabled = isLocked;
+                    buzzerBtn.innerText = isLocked ? 'ĐANG KHÓA' : 'BẤM CHUÔNG';
                 }
             }
         };
@@ -745,7 +742,7 @@
             }
 
             // Lắng nghe thay đổi thời gian thực từ Supabase
-            db.channel('any').on('postgres_changes', {
+            db.channel(`player3_channel_${roomId}_${Date.now()}`).on('postgres_changes', {
                 event: 'UPDATE',
                 schema: 'public',
                 table: 'wheel_game',
@@ -833,14 +830,21 @@
 
             }).subscribe();
 
-            // Poll timer every second to ensure synchronization
+            // Định kỳ đồng bộ trạng thái chuông, viền bảng và thời gian
             setInterval(async () => {
                 try {
-                    const { data } = await db.from('wheel_game').select('timer').eq('room_id', getRoomFilterValue()).maybeSingle();
+                    const { data } = await db.from('wheel_game')
+                        .select('timer, is_buzzer_locked, buzzer_player, border_color')
+                        .eq('room_id', roomId)
+                        .maybeSingle();
                     if (data) {
-                        const timerDisplay = document.getElementById('player1-timer');
-                        if (timerDisplay) {
-                            timerDisplay.innerText = String(data.timer || '0');
+                        const timerDisplay = document.getElementById('player3-timer');
+                        if (timerDisplay && data.timer !== undefined && data.timer !== null) {
+                            timerDisplay.innerText = String(data.timer);
+                        }
+                        updateBuzzerUI(data);
+                        if (data.border_color) {
+                            applyBorderColor(data.border_color);
                         }
                     }
                 } catch (e) {

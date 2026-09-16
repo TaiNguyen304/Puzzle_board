@@ -955,16 +955,26 @@
                 const newData = payload.new;
                 if (!('buzzer_player' in newData)) return;
                 const bp = newData.buzzer_player;
-                const n = (bp === null || bp === undefined || bp === '') ? null : Number(bp);
-                const prev = (lastBuzzerState === null || lastBuzzerState === undefined || lastBuzzerState === '')
-                    ? null
-                    : Number(lastBuzzerState);
-                if (n != null && !isNaN(n) && [1, 2, 3].includes(n) && n !== prev) {
+                const hasBuzzed = (bp !== null && bp !== undefined && String(bp).trim() !== '' && bp !== 0 && bp !== '0');
+                if (hasBuzzed && bp !== lastBuzzerState) {
                     playBuzzer();
                     quickStop();
                 }
                 lastBuzzerState = bp;
             }).subscribe();
+
+            // Kiểm tra định kỳ để lập tức dừng hiện chữ ngay khi có người bấm chuông
+            setInterval(async () => {
+                if (quickInterval || countdownInterval) {
+                    const { data } = await db.from('wheel_game')
+                        .select('buzzer_player')
+                        .eq('room_id', currentRoomId)
+                        .maybeSingle();
+                    if (data && data.buzzer_player && String(data.buzzer_player).trim() !== '' && data.buzzer_player !== 0 && data.buzzer_player !== '0') {
+                        quickStop();
+                    }
+                }
+            }, 300);
         }
 
         function triggerSound(fileName) {
@@ -1566,7 +1576,6 @@
                 marked_positions: '',
                 pending_positions: '',
                 revealed_chars: usedChars.join(','),
-                buzzer_allowed_player: String(selectedDb5Player || "1"),
                 is_buzzer_locked: false,
                 buzzer_player: "",
                 border_color: 'rgb(128,0,128)'
@@ -1627,7 +1636,6 @@
             // 4. Chuông của Player được chọn được mở lại
             await db.from('wheel_game').update({
                 border_color: 'rgb(255,255,255)',
-                buzzer_allowed_player: String(selectedDb5Player || "1"),
                 is_buzzer_locked: false,
                 buzzer_player: ""
             }).eq('room_id', currentRoomId);
@@ -1705,19 +1713,43 @@
 
         async function quickStart() {
             if (quickInterval) clearInterval(quickInterval);
+            stopCountdown();
             usedChars = [];
-            await db.from('wheel_game').update({
+
+            const isDB5 = selectedRoundName && selectedRoundName.includes('ĐB5.');
+            let updatePayload = {
                 revealed_positions: "",
                 marked_positions: "",
                 pending_positions: "",
                 revealed_chars: "",
-                buzzer_allowed_player: 'all',
                 is_buzzer_locked: false,
                 buzzer_player: "",
                 border_color: 'rgb(128,0,128)'
-            }).eq('room_id', currentRoomId);
+            };
+
+            if (isDB5) {
+                countdownValue = 45;
+                const timerEl = document.getElementById('st-timer');
+                if (timerEl) timerEl.innerText = countdownValue;
+                updatePayload.timer = 45;
+            } else {
+                countdownValue = 0;
+                const timerEl = document.getElementById('st-timer');
+                if (timerEl) timerEl.innerText = "--";
+                updatePayload.timer = 0;
+            }
+
+            await db.from('wheel_game').update(updatePayload).eq('room_id', currentRoomId);
             renderKeyboard();
-            quickResume();
+
+            if (isDB5) {
+                await revealNghia();
+                setTimeout(() => {
+                    quickResume();
+                }, 1500);
+            } else {
+                quickResume();
+            }
         }
 
         function quickStop() {
@@ -1728,18 +1760,32 @@
         async function quickResume() {
             if (quickInterval) clearInterval(quickInterval);
 
+            const isDB5 = selectedRoundName && selectedRoundName.includes('ĐB5.');
+
+            if (isDB5) {
+                if (countdownValue <= 0) {
+                    countdownValue = 45;
+                    const timerEl = document.getElementById('st-timer');
+                    if (timerEl) timerEl.innerText = countdownValue;
+                }
+                startCountdown();
+            } else {
+                stopCountdown();
+            }
+
             // Khung bảng ô chữ trở về màu tím, chuông của cả 3 người chơi được mở lại
             await db.from('wheel_game').update({
-                buzzer_allowed_player: 'all',
                 is_buzzer_locked: false,
                 buzzer_player: "",
                 border_color: 'rgb(128,0,128)'
             }).eq('room_id', currentRoomId);
 
-            startCountdown();
-
             quickInterval = setInterval(async () => {
-                const { data } = await db.from('wheel_game').select('revealed_positions').eq('room_id', currentRoomId).single();
+                const { data } = await db.from('wheel_game').select('revealed_positions, buzzer_player').eq('room_id', currentRoomId).single();
+                if (data && data.buzzer_player && String(data.buzzer_player).trim() !== "" && data.buzzer_player !== "0" && data.buzzer_player !== 0) {
+                    quickStop();
+                    return;
+                }
                 let revPos = data && data.revealed_positions ? data.revealed_positions.split(',').filter(Boolean).map(Number) : [];
 
                 let availablePositions = [];
@@ -2291,7 +2337,10 @@
                 room_id: roomId,
                 pass_player1: passP1,
                 pass_player2: passP2,
-                pass_player3: passP3
+                pass_player3: passP3,
+                is_buzzer_locked: true,
+                buzzer_player: "",
+                border_color: 'rgb(128,0,128)'
             }).select();
 
             if (error) {

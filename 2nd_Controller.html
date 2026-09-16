@@ -882,7 +882,7 @@
         let countdownValue = 45;
         let scores = { red: { total: 0, round: 0 }, yellow: { total: 0, round: 0 }, blue: { total: 0, round: 0 } };
         let specialRoundCatIndex = 0;
-        let currentRoomId = null;
+        let currentRoomId = (new URLSearchParams(window.location.search)).get('roomid') || '1000';
 
         const BLOCK_STARTS_12 = [3, 18, 33];
         const BLOCK_STARTS_14 = [2, 17, 32];
@@ -890,6 +890,16 @@
 
         window.onload = async () => {
             renderKeyboard();
+            const urlParams = new URLSearchParams(window.location.search);
+            const rId = urlParams.get('roomid') || '1000';
+            currentRoomId = rId;
+            if (urlParams.get('roomid')) {
+                document.getElementById('lockOverlay').style.display = 'none';
+                document.getElementById('room-id-val').innerText = rId;
+                document.getElementById('room-info-display').style.display = 'block';
+            }
+            await loadCurrentState();
+            setupRealtime();
         };
 
         function setupRealtime() {
@@ -902,16 +912,26 @@
                 const newData = payload.new;
                 if (!('buzzer_player' in newData)) return;
                 const bp = newData.buzzer_player;
-                const n = (bp === null || bp === undefined || bp === '') ? null : Number(bp);
-                const prev = (lastBuzzerState === null || lastBuzzerState === undefined || lastBuzzerState === '')
-                    ? null
-                    : Number(lastBuzzerState);
-                if (n != null && !isNaN(n) && [1, 2, 3].includes(n) && n !== prev) {
+                const hasBuzzed = (bp !== null && bp !== undefined && String(bp).trim() !== '' && bp !== 0 && bp !== '0');
+                if (hasBuzzed && bp !== lastBuzzerState) {
                     playBuzzer();
                     quickStop();
                 }
                 lastBuzzerState = bp;
             }).subscribe();
+
+            // Kiểm tra định kỳ để lập tức dừng hiện chữ ngay khi có người bấm chuông
+            setInterval(async () => {
+                if (quickInterval || countdownInterval) {
+                    const { data } = await db.from('wheel_game')
+                        .select('buzzer_player')
+                        .eq('room_id', currentRoomId)
+                        .maybeSingle();
+                    if (data && data.buzzer_player && String(data.buzzer_player).trim() !== '' && data.buzzer_player !== 0 && data.buzzer_player !== '0') {
+                        quickStop();
+                    }
+                }
+            }, 300);
         }
 
         function triggerSound(fileName) {
@@ -1286,21 +1306,46 @@
         }
 
         async function quickStart() {
-            if (quickInterval) clearInterval(quickInterval);
+            if (quickInterval) {
+                clearInterval(quickInterval);
+                quickInterval = null;
+            }
+            stopCountdown();
             usedChars = [];
-            await db.from('wheel_game').update({
+
+            const isDB5 = selectedRoundName && selectedRoundName.includes('ĐB5.');
+            let updatePayload = {
                 revealed_positions: "",
                 marked_positions: "",
                 pending_positions: "",
                 revealed_chars: "",
-                buzzer_allowed_player: 'all',
                 is_buzzer_locked: false,
                 buzzer_player: "",
                 border_color: 'rgb(128,0,128)'
-            }).eq('room_id', currentRoomId);
+            };
+
+            if (isDB5) {
+                countdownValue = 45;
+                const timerEl = document.getElementById('st-timer');
+                if (timerEl) timerEl.innerText = countdownValue;
+                updatePayload.timer = 45;
+            } else {
+                countdownValue = 0;
+                const timerEl = document.getElementById('st-timer');
+                if (timerEl) timerEl.innerText = "--";
+                updatePayload.timer = 0;
+            }
+
+            // Bắt đầu hiện chữ: Khung bảng là màu tím (rgb(128,0,128)), chuông của cả 3 người chơi được mở (is_buzzer_locked: false, buzzer_player: "")
+            const { error } = await db.from('wheel_game').update(updatePayload).eq('room_id', currentRoomId);
+
+            if (error) {
+                console.error("Lỗi cập nhật quickStart:", error);
+            }
+
             renderKeyboard();
 
-            if (selectedRoundName && selectedRoundName.includes('ĐB5.')) {
+            if (isDB5) {
                 await revealNghia();
 
                 setTimeout(() => {
@@ -1312,31 +1357,60 @@
         }
 
         function quickStop() {
-            if (quickInterval) clearInterval(quickInterval);
+            if (quickInterval) {
+                clearInterval(quickInterval);
+                quickInterval = null;
+            }
             stopCountdown();
         }
 
         async function quickResume() {
-            if (quickInterval) clearInterval(quickInterval);
+            if (quickInterval) {
+                clearInterval(quickInterval);
+                quickInterval = null;
+            }
 
-            await db.from('wheel_game').update({
-                buzzer_allowed_player: 'all',
+            const isDB5 = selectedRoundName && selectedRoundName.includes('ĐB5.');
+
+            if (isDB5) {
+                if (countdownValue <= 0) {
+                    countdownValue = 45;
+                    const timerEl = document.getElementById('st-timer');
+                    if (timerEl) timerEl.innerText = countdownValue;
+                }
+                startCountdown();
+            } else {
+                stopCountdown();
+            }
+
+            // Tiếp tục hiện chữ: Khung bảng là màu tím (rgb(128,0,128)), mở lại chuông cho cả 3 người chơi (is_buzzer_locked: false, buzzer_player: "")
+            const { error } = await db.from('wheel_game').update({
                 is_buzzer_locked: false,
                 buzzer_player: "",
                 border_color: 'rgb(128,0,128)'
             }).eq('room_id', currentRoomId);
 
-            startCountdown();
+            if (error) {
+                console.error("Lỗi cập nhật quickResume:", error);
+            }
 
             quickInterval = setInterval(async () => {
-                const { data } = await db.from('wheel_game').select('revealed_positions').eq('room_id', currentRoomId).single();
-                let revPos = data.revealed_positions ? data.revealed_positions.split(',').map(Number) : [];
+                const { data } = await db.from('wheel_game').select('revealed_positions, buzzer_player').eq('room_id', currentRoomId).single();
+                if (data && data.buzzer_player && String(data.buzzer_player).trim() !== "" && data.buzzer_player !== "0" && data.buzzer_player !== 0) {
+                    quickStop();
+                    return;
+                }
+                let revPos = data && data.revealed_positions ? data.revealed_positions.split(',').filter(Boolean).map(Number) : [];
 
                 let availablePositions = [];
                 for (let r = 0; r < 4; r++) {
                     for (let c = 0; c < 14; c++) {
-                        let char = currentLayout[r][c];
-                        if (char && char.trim() !== "") {
+                        let cellData = currentLayout ? currentLayout[r][c] : null;
+                        let char = (cellData && typeof cellData === 'object') ? cellData.char : cellData;
+                        let isDecoding = (cellData && typeof cellData === 'object') ? !!cellData.isDecoding : false;
+                        if (isDecoding) continue;
+
+                        if (char && String(char).trim() !== "") {
                             let pos = rcToPosition(r, c);
                             if (pos && !revPos.includes(pos)) {
                                 availablePositions.push(pos);
@@ -1347,6 +1421,7 @@
 
                 if (availablePositions.length === 0) {
                     clearInterval(quickInterval);
+                    quickInterval = null;
                     return;
                 }
 
@@ -1632,9 +1707,9 @@
         async function openBuzzer() {
             await db.from('wheel_game').update({
                 is_buzzer_locked: false,
-                buzzer_player: ""
+                buzzer_player: "",
+                border_color: 'rgb(128,0,128)'
             }).eq('room_id', currentRoomId);
-            await changeBorderColor('rgb(128,0,128)');
         }
 
         async function lockBuzzer() {
@@ -1818,7 +1893,10 @@
                 room_id: roomId,
                 pass_player1: passP1,
                 pass_player2: passP2,
-                pass_player3: passP3
+                pass_player3: passP3,
+                is_buzzer_locked: true,
+                buzzer_player: "",
+                border_color: 'rgb(128,0,128)'
             }).select();
 
             if (error) {
