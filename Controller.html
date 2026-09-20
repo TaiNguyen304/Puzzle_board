@@ -460,7 +460,8 @@
             <div class="grid-buttons">
                 <button style="background: aqua; color: black;" onclick="openBuzzer()">Mở chuông</button>
                 <button style="background: aqua; color: black;" onclick="lockBuzzer()">Khóa chuông</button>
-                <button style="background: aqua; color: black;" onclick="resetBuzzer()">Reset chuông</button>
+                <button style="background: aqua; color: black;" onclick="resetAndOpenBuzzer()">Reset và Mở</button>
+                <button style="background: aqua; color: black;" onclick="resetAndLockBuzzer()">Reset và Khóa</button>
             </div>
 
             <!-- MỤC CÂU HỎI PHỤ VÒNG ĐẶC BIỆT (ĐB 5.1 - ĐB 5.5) -->
@@ -604,7 +605,10 @@
                 </div>
             </div>
 
-            <button class="btn-reveal-all" onclick="revealAll()">HIỆN TOÀN BỘ Ô CHỮ (CÓ DẤU)</button>
+            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                <button class="btn-reveal-all" style="margin-top: 0; flex: 1; background: #39ff14; color: black; border: 1px solid #39ff14;" onclick="revealAll(true)">HIỆN TOÀN BỘ (ĐÚNG)</button>
+                <button class="btn-reveal-all" style="margin-top: 0; flex: 1; background: aqua; color: black; border: 1px solid #00d9ff;" onclick="revealAll(false)">HIỆN TOÀN BỘ (SAI)</button>
+            </div>
             <button onclick="revealDecodingCells()"
                 style="background-color: #ffff00; color: #000000; font-weight: bold !important; width: 100%; margin-top: 10px; border: 2px solid #000;">HIỆN
                 Ô GIẢI MÃ</button>
@@ -1946,7 +1950,7 @@
             }
         }
 
-        async function revealAll() {
+        async function revealAll(isCorrect = false) {
             usedChars = [...VIETNAMESE_ALPHABET];
 
             const decodingPositions = extractDecodingPositions(currentLayout);
@@ -1956,12 +1960,18 @@
                 triggerSound(solveSound);
             }
 
-            await db.from('wheel_game').update({
+            const updateData = {
                 revealed_chars: usedChars.join(','),
                 pending_positions: "",
                 is_full_reveal: true,
                 decoding_positions: decodingPositions.join(',')
-            }).eq('room_id', currentRoomId);
+            };
+
+            if (isCorrect) {
+                updateData.border_color = 'rgb(0,255,0)';
+            }
+
+            await db.from('wheel_game').update(updateData).eq('room_id', currentRoomId);
 
             renderKeyboard();
         }
@@ -2131,22 +2141,35 @@
             }).eq('room_id', currentRoomId);
         }
 
-        async function resetBuzzer() {
-            const { data: currentGame } = await db.from('wheel_game')
-                .select('is_buzzer_locked')
-                .eq('room_id', currentRoomId)
-                .single();
-
-            const currentLockStatus = currentGame ? currentGame.is_buzzer_locked : false;
-
+        async function resetAndOpenBuzzer() {
             const { error } = await db.from('wheel_game').update({
                 buzzer_player: "",
-                is_buzzer_locked: currentLockStatus,
+                is_buzzer_locked: false,
                 border_color: 'rgb(128,0,128)'
             }).eq('room_id', currentRoomId);
 
             if (error) {
-                console.error("Lỗi khi reset chuông:", error);
+                console.error("Lỗi khi reset và mở chuông:", error);
+            }
+        }
+
+        async function resetAndLockBuzzer() {
+            const { error } = await db.from('wheel_game').update({
+                buzzer_player: "",
+                is_buzzer_locked: true,
+                border_color: 'rgb(128,0,128)'
+            }).eq('room_id', currentRoomId);
+
+            if (error) {
+                console.error("Lỗi khi reset và khóa chuông:", error);
+            }
+        }
+
+        async function resetBuzzer(shouldLock = false) {
+            if (shouldLock) {
+                await resetAndLockBuzzer();
+            } else {
+                await resetAndOpenBuzzer();
             }
         }
 
