@@ -1570,9 +1570,11 @@
 
         async function revealAll(isCorrect = false) {
             usedChars = [...VIETNAMESE_ALPHABET];
-            const solveSound = document.getElementById('select-sound-solve-puzzle')?.value;
-            if (solveSound) {
-                triggerSound(solveSound);
+            if (isCorrect) {
+                const solveSound = document.getElementById('select-sound-solve-puzzle')?.value;
+                if (solveSound) {
+                    triggerSound(solveSound);
+                }
             }
             const updateData = {
                 revealed_chars: usedChars.join(','),

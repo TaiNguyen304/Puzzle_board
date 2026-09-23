@@ -1955,9 +1955,11 @@
 
             const decodingPositions = extractDecodingPositions(currentLayout);
 
-            const solveSound = document.getElementById('select-sound-solve-puzzle')?.value;
-            if (solveSound) {
-                triggerSound(solveSound);
+            if (isCorrect) {
+                const solveSound = document.getElementById('select-sound-solve-puzzle')?.value;
+                if (solveSound) {
+                    triggerSound(solveSound);
+                }
             }
 
             const updateData = {
