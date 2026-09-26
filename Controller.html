@@ -435,6 +435,7 @@
                 <button onclick="handleRound('Đoán Nhanh 1', false)">Đoán nhanh 1</button>
                 <button onclick="handleRound('Đoán Nhanh 2', false)">Đoán nhanh 2</button>
                 <button onclick="handleRound('Đoán Nhanh 3', false)">Đoán nhanh 3</button>
+                <button style="background: #00e5ff; color: black; font-weight: bold;" onclick="handleRound('Đoán nhanh thần tốc', false)">Đoán nhanh thần tốc</button>
                 <button class="btn-round" onclick="handleRound('Vòng 1', true)">Vòng 1</button>
                 <button class="btn-round" onclick="handleRound('Vòng 2', true)">Vòng 2</button>
                 <button class="btn-round" onclick="handleRound('Vòng 3', true)">Vòng 3</button>
@@ -445,6 +446,45 @@
                 <button class="btn-round" onclick="handleRound('Vòng 5', true)">Vòng 5</button>
                 <button class="btn-round" onclick="handleRound('Vòng phụ', true)">Vòng phụ</button>
                 <button class="btn-round" onclick="handleRound('Vòng Đặc biệt', true)">Vòng ĐB</button>
+            </div>
+
+            <!-- MỤC ĐOÁN NHANH THẦN TỐC (SHEET 2) -->
+            <div id="fast-tossup-panel"
+                style="display:none; margin-top:15px; border: 2px solid #00e5ff; padding: 12px; background: #1a1a1a; border-radius: 6px;">
+                <p style="color:#00e5ff; margin:0 0 10px 0; font-size:0.85rem; text-transform: uppercase;">⚡ ĐOÁN NHANH THẦN TỐC (SHEET 2):</p>
+                
+                <div style="margin-bottom: 10px; font-size: 0.85rem; color: #fff; background: #000; padding: 8px; border-radius: 4px; border: 1px solid #333;">
+                    <span>Ô chữ hiện tại: </span><span id="fast-progress-text" style="color: #39ff14; font-weight: bold;">Chưa bắt đầu</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                    <button style="background: #ffff00; color: #000; padding: 10px; font-size: 0.85rem; font-weight: bold !important; border: none; border-radius: 4px; cursor: pointer;"
+                        onclick="fastShowFirstPuzzle()">
+                        HIỆN Ô CHỮ ĐẦU TIÊN
+                    </button>
+                    <button style="background: #ff0000; color: #fff; padding: 10px; font-size: 0.85rem; font-weight: bold !important; border: none; border-radius: 4px; cursor: pointer;"
+                        onclick="fastSetTimer30()">
+                        ĐẶT THỜI GIAN
+                    </button>
+                </div>
+
+                <div style="margin-bottom: 8px;">
+                    <button style="background: #00e5ff; color: #000; width: 100%; padding: 12px; font-size: 0.95rem; font-weight: bold !important; border: none; border-radius: 4px; cursor: pointer;"
+                        onclick="fastStartTimerAndFlip()">
+                        ▶ TÍNH GIỜ
+                    </button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button style="background: #39ff14; color: #000; padding: 12px; font-size: 1rem; font-weight: bold !important; border: none; border-radius: 4px; cursor: pointer;"
+                        onclick="fastHandleAnswer(true)">
+                        ĐÚNG
+                    </button>
+                    <button style="background: rgb(128,0,128); color: #fff; padding: 12px; font-size: 1rem; font-weight: bold !important; border: none; border-radius: 4px; cursor: pointer;"
+                        onclick="fastHandleAnswer(false)">
+                        SAI
+                    </button>
+                </div>
             </div>
 
             <p style="color:var(--pink); margin: 15px 0 5px 0; font-size: 0.8rem;">CÂU HỎI PHỤ VÒNG ĐẶC BIỆT:</p>
@@ -929,6 +969,11 @@
 
         const VIETNAMESE_ALPHABET = "AĂÂBCDĐEÊGHIKLMNOÔƠPQRSTUƯVXY".split('');
         let excelData = [];
+        let fastPuzzlesData = [];
+        let currentFastIndex = 0;
+        let fastFlipInterval = null;
+        let isFastTossupRunning = false;
+        let isFastTransitioning = false;
         let currentRoundData = null;
         let selectedRoundName = "";
         let usedChars = [];
@@ -947,6 +992,15 @@
 
         window.onload = async () => {
             renderKeyboard();
+            try {
+                const res = await fetch('PuzzleBoard.xlsx');
+                if (res.ok) {
+                    const buf = await res.arrayBuffer();
+                    await loadExcelFromBuffer(buf, 'PuzzleBoard.xlsx (Sẵn có)');
+                }
+            } catch (e) {
+                console.log('Không tự động nạp PuzzleBoard.xlsx:', e);
+            }
         };
 
         function setupRealtime() {
@@ -962,20 +1016,34 @@
                 const hasBuzzed = (bp !== null && bp !== undefined && String(bp).trim() !== '' && bp !== 0 && bp !== '0');
                 if (hasBuzzed && bp !== lastBuzzerState) {
                     playBuzzer();
-                    quickStop();
+                    if (isFastTossupRunning) {
+                        if (fastFlipInterval) {
+                            clearInterval(fastFlipInterval);
+                            fastFlipInterval = null;
+                        }
+                    } else {
+                        quickStop();
+                    }
                 }
                 lastBuzzerState = bp;
             }).subscribe();
 
             // Kiểm tra định kỳ để lập tức dừng hiện chữ ngay khi có người bấm chuông
             setInterval(async () => {
-                if (quickInterval || countdownInterval) {
+                if (quickInterval || (countdownInterval && !isFastTossupRunning) || fastFlipInterval) {
                     const { data } = await db.from('wheel_game')
                         .select('buzzer_player')
                         .eq('room_id', currentRoomId)
                         .maybeSingle();
                     if (data && data.buzzer_player && String(data.buzzer_player).trim() !== '' && data.buzzer_player !== 0 && data.buzzer_player !== '0') {
-                        quickStop();
+                        if (isFastTossupRunning) {
+                            if (fastFlipInterval) {
+                                clearInterval(fastFlipInterval);
+                                fastFlipInterval = null;
+                            }
+                        } else {
+                            quickStop();
+                        }
                     }
                 }
             }, 300);
@@ -1049,26 +1117,49 @@
             return String(value).trim();
         }
 
-        function isYellowExcelFill(cell) {
+        function getExcelCellFillInfo(cell) {
             const fill = cell && cell.fill;
-            if (!fill || fill.type !== 'pattern' || !fill.pattern || fill.pattern === 'none') return false;
+            let isYellow = false;
+            let isRed = false;
+            let isBlue = false;
 
-            const checkColor = (color) => {
-                if (!color) return false;
-                if (color.argb) {
-                    const hex = String(color.argb).toUpperCase();
-                    const rgb = hex.length >= 6 ? hex.slice(-6) : hex;
-                    if (['FFFF00', 'FFFFE0', 'FFC000', 'FFD966', 'FFF2CC', 'FFE699', 'FFFF99'].includes(rgb)) return true;
-                    const r = parseInt(rgb.slice(0, 2), 16);
-                    const g = parseInt(rgb.slice(2, 4), 16);
-                    const b = parseInt(rgb.slice(4, 6), 16);
-                    if (!isNaN(r) && !isNaN(g) && !isNaN(b) && r >= 180 && g >= 180 && b <= 120) return true;
-                }
-                if ([6, 13, 19, 43, 44].includes(color.indexed)) return true;
-                return false;
-            };
+            if (fill && fill.type === 'pattern' && fill.pattern && fill.pattern !== 'none') {
+                const checkColor = (color) => {
+                    if (!color) return;
+                    if (color.argb) {
+                        const hex = String(color.argb).toUpperCase();
+                        const rgb = hex.length >= 6 ? hex.slice(-6) : hex;
+                        if (['FFFF00', 'FFFFE0', 'FFC000', 'FFD966', 'FFF2CC', 'FFE699', 'FFFF99'].includes(rgb)) {
+                            isYellow = true;
+                        } else if (['FF0000', 'FF0033', 'CC0000', 'E06666', 'EA9999', 'C00000', 'FF4D4D', 'FF1A1A', 'FF3333', 'ED1C24', 'E51400'].includes(rgb)) {
+                            isRed = true;
+                        } else if (['0000FF', '0000CC', '3333FF', '0044FF', '4A86E8', '6D9EEB', '000080', '00008B', '0000CD', '1E90FF', '00BFFF', '2A6099', '0055FF', '0078D7'].includes(rgb)) {
+                            isBlue = true;
+                        } else {
+                            const r = parseInt(rgb.slice(0, 2), 16);
+                            const g = parseInt(rgb.slice(2, 4), 16);
+                            const b = parseInt(rgb.slice(4, 6), 16);
+                            if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+                                if (r >= 180 && g >= 180 && b <= 120) isYellow = true;
+                                else if (r >= 180 && g <= 80 && b <= 80) isRed = true;
+                                else if (b >= 180 && r <= 80 && g <= 120) isBlue = true;
+                            }
+                        }
+                    }
+                    if ([6, 13, 19, 43, 44].includes(color.indexed)) isYellow = true;
+                    if ([2, 10, 16, 23].includes(color.indexed)) isRed = true;
+                    if ([4, 12, 18, 25, 32].includes(color.indexed)) isBlue = true;
+                };
 
-            return checkColor(fill.fgColor) || checkColor(fill.bgColor);
+                checkColor(fill.fgColor);
+                checkColor(fill.bgColor);
+            }
+
+            return { isYellow, isRed, isBlue };
+        }
+
+        function isYellowExcelFill(cell) {
+            return getExcelCellFillInfo(cell).isYellow;
         }
 
         function buildRowsFromExcelWorksheet(worksheet) {
@@ -1082,9 +1173,9 @@
                 for (let c = 1; c <= maxCol; c++) {
                     const cell = row.getCell(c);
                     const text = getExcelCellText(cell.value);
-                    const isYellow = isYellowExcelFill(cell);
-                    if (text !== '' || isYellow) {
-                        rowData[c - 1] = { v: text, isYellow };
+                    const { isYellow, isRed, isBlue } = getExcelCellFillInfo(cell);
+                    if (text !== '' || isYellow || isRed || isBlue) {
+                        rowData[c - 1] = { v: text, isYellow, isRed, isBlue };
                     } else {
                         rowData[c - 1] = null;
                     }
@@ -1202,7 +1293,7 @@
             P3: { cat: 31, cols12: [33, 44], cols14: [32, 45] }
         };
 
-        function buildLayoutFromBlock(block, config) {
+        function buildLayoutFromBlock(block, config, isWWF = false) {
             const layout = [];
             const { cols12, cols14 } = config;
 
@@ -1218,31 +1309,29 @@
 
                     let char = "";
                     let isYellow = false;
+                    let isRed = false;
+                    let isBlue = false;
 
                     if (typeof cellObj === 'object' && cellObj !== null) {
                         char = (cellObj.v != null) ? String(cellObj.v).trim() : "";
                         if (cellObj.isYellow) isYellow = true;
-                        if (cellObj.s && cellObj.s.fill && cellObj.s.fill.fgColor) {
-                            const fg = cellObj.s.fill.fgColor;
-                            if (fg.rgb) {
-                                const colorHex = String(fg.rgb).toUpperCase();
-                                if (colorHex === "FFFF00" || colorHex === "FFFFFF00" || colorHex.endsWith("FFFF00") || colorHex === "FFFFE0") {
-                                    isYellow = true;
-                                }
-                            }
-                            if (fg.indexed === 6 || fg.indexed === 13 || fg.indexed === 19) {
-                                isYellow = true;
-                            }
-                        }
+                        if (cellObj.isRed) isRed = true;
+                        if (cellObj.isBlue) isBlue = true;
                     } else {
                         char = String(cellObj).trim();
                     }
 
                     if (char !== "") {
-                        if (isYellow) {
-                            result.push({ char: char, isDecoding: true });
-                        } else {
+                        let cellData = { char: char };
+                        if (isWWF) cellData.isWWF = true;
+                        if (isYellow) cellData.isDecoding = true;
+                        if (isWWF && isRed) cellData.bonusType = 'TL';
+                        if (isWWF && isBlue) cellData.bonusType = 'DL';
+
+                        if (!isWWF && !isYellow) {
                             result.push(char);
+                        } else {
+                            result.push(cellData);
                         }
                     } else {
                         result.push("");
@@ -1259,45 +1348,100 @@
             return layout;
         }
 
+        function getWWFOptions(subRoundText) {
+            if (!subRoundText) return { 1: false, 2: false, 3: false };
+            const str = String(subRoundText).trim().toUpperCase().replace(/\s+/g, '');
+            if (!str.startsWith('WWF')) return { 1: false, 2: false, 3: false };
+
+            if (str === 'WWF' || str === 'WWF123') {
+                return { 1: true, 2: true, 3: true };
+            }
+
+            const suffix = str.substring(3);
+            return {
+                1: suffix.includes('1'),
+                2: suffix.includes('2'),
+                3: suffix.includes('3')
+            };
+        }
+
+        async function loadExcelFromBuffer(arrayBuffer, fileName = "PuzzleBoard.xlsx") {
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(arrayBuffer);
+            const worksheet = workbook.worksheets[0];
+            if (!worksheet) {
+                showPopup("Lỗi", "Không tìm thấy sheet trong file Excel.");
+                return;
+            }
+            const rows = buildRowsFromExcelWorksheet(worksheet);
+
+            excelData = [];
+            let decodeCount = 0;
+            let wwfCount = 0;
+            for (let i = 1; i < rows.length; i += 4) {
+                const block = rows.slice(i, i + 4);
+                const roundName = getCellValue(block[0] && block[0][0]);
+                if (!roundName) continue;
+
+                // Ô ở dưới ô ghi tên vòng (tức là block[1][0])
+                const subRoundText = getCellValue(block[1] && block[1][0]);
+                const wwfMap = getWWFOptions(subRoundText);
+                const isAnyWWF = wwfMap[1] || wwfMap[2] || wwfMap[3];
+                if (isAnyWWF) wwfCount++;
+
+                const options = [];
+
+                ["P1", "P2", "P3"].forEach((key, idx) => {
+                    const topicNumber = idx + 1;
+                    const isTopicWWF = !!wwfMap[topicNumber];
+                    const config = COL_MAP[key];
+                    const catName = getCellValue(block[0] && block[0][config.cat]);
+                    if (catName) {
+                        const layout = buildLayoutFromBlock(block, config, isTopicWWF);
+                        decodeCount += extractDecodingPositions(layout).length;
+                        options.push({ cat: catName, layout, isWWF: isTopicWWF });
+                    }
+                });
+
+                if (options.length > 0) {
+                    excelData.push({ Vong: roundName, Options: options, isWWF: isAnyWWF });
+                }
+            }
+
+            // Đọc Sheet 2 cho mục Đoán nhanh thần tốc
+            fastPuzzlesData = [];
+            if (workbook.worksheets.length > 1) {
+                const worksheet2 = workbook.worksheets[1];
+                const rows2 = buildRowsFromExcelWorksheet(worksheet2);
+                for (let i = 1; i < rows2.length; i += 4) {
+                    const block = rows2.slice(i, i + 4);
+                    const roundName = getCellValue(block[0] && block[0][0]);
+                    const catName = getCellValue(block[0] && block[0][1]);
+                    if (!roundName && !catName) continue;
+                    const subRoundText = getCellValue(block[1] && block[1][0]);
+                    const wwfMap = getWWFOptions(subRoundText);
+                    const isWWF = wwfMap[1] || String(subRoundText || '').toUpperCase().startsWith('WWF');
+                    const layout = buildLayoutFromBlock(block, COL_MAP.P1, isWWF);
+                    fastPuzzlesData.push({
+                        name: roundName || `Ô chữ ${fastPuzzlesData.length + 1}`,
+                        cat: catName || '',
+                        layout: layout,
+                        isWWF: isWWF
+                    });
+                }
+            }
+
+            document.getElementById('file-name-display').innerText = "📁 " + fileName;
+            const wwfInfo = wwfCount > 0 ? `, ${wwfCount} vòng có WWF` : '';
+            showPopup("Hệ Thống", `Đã nạp file Excel thành công! (Sheet 1: ${excelData.length} vòng${wwfInfo}, ${decodeCount} ô giải mã | Sheet 2: ${fastPuzzlesData.length} ô chữ Đoán Nhanh Thần Tốc)`);
+        }
+
         document.getElementById('excelFile').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            document.getElementById('file-name-display').innerText = "📁 " + file.name;
             try {
                 const arrayBuffer = await file.arrayBuffer();
-                const workbook = new ExcelJS.Workbook();
-                await workbook.xlsx.load(arrayBuffer);
-                const worksheet = workbook.worksheets[0];
-                if (!worksheet) {
-                    showPopup("Lỗi", "Không tìm thấy sheet trong file Excel.");
-                    return;
-                }
-                const rows = buildRowsFromExcelWorksheet(worksheet);
-
-                excelData = [];
-                let decodeCount = 0;
-                for (let i = 1; i < rows.length; i += 4) {
-                    const block = rows.slice(i, i + 4);
-                    const roundName = getCellValue(block[0] && block[0][0]);
-                    if (!roundName) continue;
-
-                    const options = [];
-
-                    ["P1", "P2", "P3"].forEach(key => {
-                        const config = COL_MAP[key];
-                        const catName = getCellValue(block[0] && block[0][config.cat]);
-                        if (catName) {
-                            const layout = buildLayoutFromBlock(block, config);
-                            decodeCount += extractDecodingPositions(layout).length;
-                            options.push({ cat: catName, layout });
-                        }
-                    });
-
-                    if (options.length > 0) {
-                        excelData.push({ Vong: roundName, Options: options });
-                    }
-                }
-                showPopup("Hệ Thống", `Đã nạp file Excel thành công! (Phát hiện ${decodeCount} ô giải mã)`);
+                await loadExcelFromBuffer(arrayBuffer, file.name);
             } catch (err) {
                 console.error(err);
                 showPopup("Lỗi", "Không đọc được file Excel: " + err.message);
@@ -1311,24 +1455,45 @@
 
         function handleRound(roundName, hasPopup) {
             selectedRoundName = roundName;
+
+            const isFastTossup = roundName === 'Đoán nhanh thần tốc';
+            const isDb5 = isDb5Round(roundName);
+            const isQuick = !isDb5 && !isFastTossup && ["Đoán Nhanh", "ĐNLH"].some(t => roundName.includes(t));
+            const rnLower = roundName.toLowerCase();
+            const isSpecialRound = !isDb5 && !isFastTossup && (rnLower.includes('vòng đặc biệt') || rnLower.includes('vòng phụ') || roundName.includes('ĐB'));
+            const isSpecialRoundOnly = !isDb5 && !isFastTossup && (rnLower.includes('vòng đặc biệt') || rnLower.includes('vòng phụ'));
+
+            document.getElementById('quick-panel').style.display = isQuick ? 'block' : 'none';
+            const db5Panel = document.getElementById('db5-special-panel');
+            if (db5Panel) db5Panel.style.display = isDb5 ? 'block' : 'none';
+            const fastPanel = document.getElementById('fast-tossup-panel');
+            if (fastPanel) fastPanel.style.display = isFastTossup ? 'block' : 'none';
+
+            document.getElementById('btn-ngiah').style.display = isSpecialRound ? 'block' : 'none';
+            document.getElementById('special-guess-panel').style.display = isSpecialRound ? 'block' : 'none';
+            document.getElementById('special-round-timer-panel').style.display = isSpecialRoundOnly ? 'block' : 'none';
+
+            if (isFastTossup) {
+                if (fastPuzzlesData.length === 0) {
+                    showPopup("Thông báo", "Chưa có dữ liệu Sheet 2 cho Đoán Nhanh Thần Tốc. Vui lòng kiểm tra file Excel.");
+                } else {
+                    fastShowFirstPuzzle();
+                }
+                return;
+            }
+
+            // Dừng interval đoán nhanh thần tốc nếu chuyển sang vòng khác
+            if (fastFlipInterval) {
+                clearInterval(fastFlipInterval);
+                fastFlipInterval = null;
+            }
+            isFastTossupRunning = false;
+
             currentRoundData = excelData.find(d => String(d.Vong).toLowerCase().includes(roundName.toLowerCase()));
             if (!currentRoundData) {
                 showPopup("Thông báo", "Không tìm thấy dữ liệu cho vòng: " + roundName);
                 return;
             }
-
-            const isDb5 = isDb5Round(roundName);
-            const isQuick = !isDb5 && ["Đoán Nhanh", "ĐNLH"].some(t => roundName.includes(t));
-            const rnLower = roundName.toLowerCase();
-            const isSpecialRound = !isDb5 && (rnLower.includes('vòng đặc biệt') || rnLower.includes('vòng phụ') || roundName.includes('ĐB'));
-            const isSpecialRoundOnly = !isDb5 && (rnLower.includes('vòng đặc biệt') || rnLower.includes('vòng phụ'));
-
-            document.getElementById('quick-panel').style.display = isQuick ? 'block' : 'none';
-            const db5Panel = document.getElementById('db5-special-panel');
-            if (db5Panel) db5Panel.style.display = isDb5 ? 'block' : 'none';
-            document.getElementById('btn-ngiah').style.display = isSpecialRound ? 'block' : 'none';
-            document.getElementById('special-guess-panel').style.display = isSpecialRound ? 'block' : 'none';
-            document.getElementById('special-round-timer-panel').style.display = isSpecialRoundOnly ? 'block' : 'none';
 
             if (!hasPopup) {
                 if (/ĐB5\.[2-5]/.test(roundName)) {
@@ -1873,6 +2038,261 @@
             }
 
             startCountdown();
+        }
+
+        async function fastShowFirstPuzzle() {
+            if (fastPuzzlesData.length === 0) {
+                showPopup("Thông báo", "Chưa có dữ liệu Sheet 2. Vui lòng nạp file Excel trước.");
+                return;
+            }
+
+            if (fastFlipInterval) {
+                clearInterval(fastFlipInterval);
+                fastFlipInterval = null;
+            }
+            isFastTossupRunning = false;
+            stopCountdown();
+
+            currentFastIndex = 0;
+            const firstPuzzle = fastPuzzlesData[0];
+            currentLayout = firstPuzzle.layout;
+            currentPuzzleRaw = getPuzzleStringWithSpaces(currentLayout);
+            usedChars = [];
+
+            const progressEl = document.getElementById('fast-progress-text');
+            if (progressEl) {
+                progressEl.innerText = `${firstPuzzle.name} (1/${fastPuzzlesData.length}) - ${firstPuzzle.cat}`;
+            }
+
+            // KHÔNG tự ý mở chuông khi hiện ô chữ đầu tiên - chuông bị khóa cho đến khi bấm "Tính giờ"
+            await db.from('wheel_game').update({
+                puzzle_text: currentPuzzleRaw,
+                category: String(firstPuzzle.cat || "").toUpperCase(),
+                revealed_chars: "",
+                pending_positions: "",
+                marked_positions: "",
+                revealed_positions: "",
+                board_layout: JSON.stringify(currentLayout),
+                is_full_reveal: false,
+                decoding_positions: "",
+                border_color: 'rgb(128,0,128)',
+                is_buzzer_locked: true,
+                buzzer_player: ""
+            }).eq('room_id', currentRoomId);
+
+            document.getElementById('st-round').innerText = 'Đoán nhanh thần tốc';
+            document.getElementById('st-cat').innerText = firstPuzzle.cat;
+            document.getElementById('st-puz').innerText = currentPuzzleRaw;
+            renderKeyboard();
+            triggerSelectedOpenWordSound();
+        }
+
+        async function fastSetTimer30() {
+            countdownValue = 30;
+            document.getElementById('st-timer').innerText = countdownValue;
+            stopCountdown();
+            await db.from('wheel_game').update({ timer: countdownValue }).eq('room_id', currentRoomId);
+        }
+
+        function startFastCountdown() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            countdownInterval = setInterval(async () => {
+                if (countdownValue > 0) {
+                    countdownValue--;
+                    document.getElementById('st-timer').innerText = countdownValue;
+
+                    if (countdownValue === 0) {
+                        if (fastFlipInterval) {
+                            clearInterval(fastFlipInterval);
+                            fastFlipInterval = null;
+                        }
+                        isFastTossupRunning = false;
+                        await db.from('wheel_game').update({
+                            timer: 0,
+                            is_buzzer_locked: true
+                        }).eq('room_id', currentRoomId);
+                    } else {
+                        await db.from('wheel_game').update({ timer: countdownValue }).eq('room_id', currentRoomId);
+                    }
+                } else {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                    if (fastFlipInterval) {
+                        clearInterval(fastFlipInterval);
+                        fastFlipInterval = null;
+                    }
+                    isFastTossupRunning = false;
+                }
+            }, 1000);
+        }
+
+        function startFastFlipInterval() {
+            if (fastFlipInterval) clearInterval(fastFlipInterval);
+
+            fastFlipInterval = setInterval(async () => {
+                if (!isFastTossupRunning || isFastTransitioning || !currentLayout) return;
+
+                try {
+                    const { data } = await db.from('wheel_game').select('revealed_positions, buzzer_player').eq('room_id', currentRoomId).single();
+                    if (data && data.buzzer_player && String(data.buzzer_player).trim() !== '' && data.buzzer_player !== 0 && data.buzzer_player !== '0') {
+                        if (fastFlipInterval) {
+                            clearInterval(fastFlipInterval);
+                            fastFlipInterval = null;
+                        }
+                        return;
+                    }
+
+                    let curRev = data && data.revealed_positions ? data.revealed_positions.split(',').filter(Boolean).map(Number) : [];
+
+                    let availablePositions = [];
+                    for (let r = 0; r < 4; r++) {
+                        for (let c = 0; c < 14; c++) {
+                            let cellData = currentLayout[r] ? currentLayout[r][c] : null;
+                            let char = (cellData && typeof cellData === 'object') ? cellData.char : cellData;
+                            let isDecoding = (cellData && typeof cellData === 'object') ? !!cellData.isDecoding : false;
+                            if (isDecoding) continue;
+
+                            if (char && String(char).trim() !== "") {
+                                let pos = rcToPosition(r, c);
+                                if (pos && !curRev.includes(pos)) {
+                                    availablePositions.push(pos);
+                                }
+                            }
+                        }
+                    }
+
+                    if (availablePositions.length === 0) {
+                        return;
+                    }
+
+                    const randomPos = availablePositions[Math.floor(Math.random() * availablePositions.length)];
+                    curRev.push(randomPos);
+
+                    await db.from('wheel_game').update({
+                        revealed_positions: curRev.join(',')
+                    }).eq('room_id', currentRoomId);
+                } catch (err) {
+                    console.error("Lỗi lật chữ Đoán nhanh thần tốc:", err);
+                }
+            }, 400);
+        }
+
+        async function fastStartTimerAndFlip() {
+            if (fastPuzzlesData.length === 0) {
+                showPopup("Thông báo", "Chưa có dữ liệu Sheet 2. Vui lòng nạp file Excel trước.");
+                return;
+            }
+
+            if (!currentLayout) {
+                await fastShowFirstPuzzle();
+            }
+
+            if (countdownValue <= 0) {
+                countdownValue = 30;
+            }
+            document.getElementById('st-timer').innerText = countdownValue;
+            isFastTossupRunning = true;
+            isFastTransitioning = false;
+
+            // CHỈ KHI BẤM NÚT TÍNH GIỜ CHUÔNG MỚI ĐƯỢC MỞ
+            await db.from('wheel_game').update({
+                is_buzzer_locked: false,
+                buzzer_player: "",
+                border_color: 'rgb(128,0,128)',
+                timer: countdownValue
+            }).eq('room_id', currentRoomId);
+
+            const sound30 = document.getElementById('select-sound-30s')?.value;
+            if (sound30) triggerSound(sound30);
+
+            startFastCountdown();
+            startFastFlipInterval();
+        }
+
+        async function fastHandleAnswer(isCorrect) {
+            if (fastPuzzlesData.length === 0) return;
+            if (isFastTransitioning) return;
+            isFastTransitioning = true;
+
+            if (fastFlipInterval) {
+                clearInterval(fastFlipInterval);
+                fastFlipInterval = null;
+            }
+
+            const isTimeUp = countdownValue <= 0 || !isFastTossupRunning;
+
+            if (isCorrect) {
+                await db.from('wheel_game').update({
+                    revealed_chars: VIETNAMESE_ALPHABET.join(','),
+                    is_full_reveal: true,
+                    border_color: 'rgb(57, 255, 20)',
+                    buzzer_player: "",
+                    is_buzzer_locked: true
+                }).eq('room_id', currentRoomId);
+            } else {
+                await db.from('wheel_game').update({
+                    revealed_chars: VIETNAMESE_ALPHABET.join(','),
+                    is_full_reveal: true,
+                    border_color: 'rgb(128,0,128)',
+                    buzzer_player: "",
+                    is_buzzer_locked: true
+                }).eq('room_id', currentRoomId);
+            }
+
+            // Nếu đã hết 30 giây thì dừng tại đây, không chuyển sang ô chữ tiếp theo
+            if (isTimeUp) {
+                isFastTransitioning = false;
+                return;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            currentFastIndex++;
+            if (currentFastIndex < fastPuzzlesData.length) {
+                const nextPuzzle = fastPuzzlesData[currentFastIndex];
+                currentLayout = nextPuzzle.layout;
+                currentPuzzleRaw = getPuzzleStringWithSpaces(currentLayout);
+                usedChars = [];
+
+                const progressEl = document.getElementById('fast-progress-text');
+                if (progressEl) {
+                    progressEl.innerText = `${nextPuzzle.name} (${currentFastIndex + 1}/${fastPuzzlesData.length}) - ${nextPuzzle.cat}`;
+                }
+
+                const shouldUnlockBuzzer = isFastTossupRunning && countdownValue > 0;
+
+                await db.from('wheel_game').update({
+                    puzzle_text: currentPuzzleRaw,
+                    category: String(nextPuzzle.cat || "").toUpperCase(),
+                    revealed_chars: "",
+                    pending_positions: "",
+                    marked_positions: "",
+                    revealed_positions: "",
+                    board_layout: JSON.stringify(currentLayout),
+                    is_full_reveal: false,
+                    decoding_positions: "",
+                    border_color: 'rgb(128,0,128)',
+                    is_buzzer_locked: !shouldUnlockBuzzer,
+                    buzzer_player: ""
+                }).eq('room_id', currentRoomId);
+
+                document.getElementById('st-round').innerText = 'Đoán nhanh thần tốc';
+                document.getElementById('st-cat').innerText = nextPuzzle.cat;
+                document.getElementById('st-puz').innerText = currentPuzzleRaw;
+                renderKeyboard();
+                triggerSelectedOpenWordSound();
+
+                if (shouldUnlockBuzzer) {
+                    startFastFlipInterval();
+                }
+            } else {
+                const progressEl = document.getElementById('fast-progress-text');
+                if (progressEl) {
+                    progressEl.innerText = `Đã hoàn thành tất cả ${fastPuzzlesData.length} ô chữ!`;
+                }
+            }
+
+            isFastTransitioning = false;
         }
 
         function stopAllSounds() {

@@ -106,6 +106,13 @@
             font-style: normal;
         }
 
+        @font-face {
+            font-family: 'Helvetica-Bold';
+            src: url('Helvetica-Bold.ttf') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
         .cell {
             width: 80px;
             height: 110px;
@@ -151,6 +158,42 @@
             box-shadow: inset 0 0 0 3px #000;
             border-radius: 0px;
             color: transparent;
+        }
+
+        /* Chế độ WWF */
+        .wwf-mode .cell.active {
+            background-image: none !important;
+            background-color: #ff00cc !important;
+            box-shadow: inset 0 0 0 2px #000, inset 0 0 0 3px #2a032a !important;
+            border-radius: 0px !important;
+            color: #000000 !important;
+            font-family: 'Helvetica-Bold', Helvetica, Arial, sans-serif !important;
+            font-weight: bold !important;
+        }
+
+        .wwf-mode .cell.bonus-tile {
+            font-size: 46px !important;
+            letter-spacing: -1px;
+        }
+
+        .wwf-mode .cell.revealed.bonus-tile,
+        .wwf-mode .cell.revealed {
+            font-size: 70px !important;
+            letter-spacing: normal;
+            background-image: none !important;
+            background-color: #ffff00 !important;
+            box-shadow: inset 0 0 0 3px #000 !important;
+            border-radius: 0px !important;
+            color: #000000 !important;
+            font-family: 'Helvetica-Bold', Helvetica, Arial, sans-serif !important;
+            font-weight: bold !important;
+        }
+
+        .wwf-mode .cell.marked {
+            background-image: none !important;
+            background-color: #00ffff !important;
+            box-shadow: inset 0 0 0 3px #000 !important;
+            border-radius: 0px !important;
         }
 
         .cell.decoding {
@@ -849,6 +892,16 @@
             });
 
             if (Array.isArray(boardStateCache.board_layout)) {
+                const isWWFMode = boardStateCache.board_layout.some(row =>
+                    Array.isArray(row) && row.some(c => c && typeof c === 'object' && c.isWWF)
+                );
+
+                const boardContainer = document.getElementById('puzzle-main-container') || document.getElementById('board');
+                if (boardContainer) {
+                    if (isWWFMode) boardContainer.classList.add('wwf-mode');
+                    else boardContainer.classList.remove('wwf-mode');
+                }
+
                 boardStateCache.board_layout.forEach((rowChars, rIdx) => {
                     if (!Array.isArray(rowChars)) return;
                     rowChars.forEach((cellData, cIdx) => {
@@ -857,6 +910,7 @@
 
                         let char = (cellData && typeof cellData === 'object') ? cellData.char : cellData;
                         const isDecoding = (cellData && typeof cellData === 'object') ? !!cellData.isDecoding : false;
+                        const bonusType = (cellData && typeof cellData === 'object') ? (cellData.bonusType || "") : "";
                         if (!char || String(char).trim() === "") return;
 
                         const ch = String(char).trim().toUpperCase();
@@ -865,11 +919,16 @@
 
                         target.classList.add('active');
 
+                        if (isWWFMode && bonusType) {
+                            target.innerText = bonusType;
+                            target.classList.add('bonus-tile');
+                        }
+
                         if (isDecodingCell && pos != null && revealedPosSet.has(pos)) {
                             target.classList.add('revealed');
                             target.innerText = removeToneMarks(ch);
                             target.style.backgroundImage = 'none';
-                            target.style.backgroundColor = 'white';
+                            target.style.backgroundColor = isWWFMode ? '#ffff00' : 'white';
                         }
                         else if (isDecodingCell) {
                             target.className = 'cell decoding';
@@ -884,16 +943,19 @@
                             target.classList.add('revealed');
                             target.innerText = ch;
                             target.style.backgroundImage = 'none';
-                            target.style.backgroundColor = 'white';
+                            target.style.backgroundColor = isWWFMode ? '#ffff00' : 'white';
                         }
                         else if (pos != null && revealedPosSet.has(pos)) {
                             target.classList.add('revealed');
                             target.innerText = removeToneMarks(ch);
                             target.style.backgroundImage = 'none';
-                            target.style.backgroundColor = 'white';
+                            target.style.backgroundColor = isWWFMode ? '#ffff00' : 'white';
                         }
                         else if (pos != null && markedSet.has(pos)) {
                             target.classList.add('marked');
+                            if (isWWFMode && bonusType) {
+                                target.innerText = bonusType;
+                            }
                         }
                         else {
                             const cleanChar = removeToneMarks(ch).toUpperCase();
@@ -901,7 +963,7 @@
                                 target.classList.add('revealed');
                                 target.innerText = removeToneMarks(ch);
                                 target.style.backgroundImage = 'none';
-                                target.style.backgroundColor = 'white';
+                                target.style.backgroundColor = isWWFMode ? '#ffff00' : 'white';
                             }
                         }
                     });
