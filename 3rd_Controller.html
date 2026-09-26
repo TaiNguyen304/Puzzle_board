@@ -1,0 +1,1952 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3rd Controller - Chiếc Nón Kỳ Diệu</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+    <style>
+        :root {
+            --pink: #ff00cc;
+            --neon: #39ff14;
+        }
+
+        * {
+            font-weight: bold !important;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #5a4636;
+            color: #fff;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .panel {
+            background: #222;
+            padding: 15px;
+            border-radius: 10px;
+            border-top: 4px solid var(--pink);
+            margin-bottom: 15px;
+        }
+
+        h3 {
+            margin-top: 0;
+            color: var(--pink);
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .excel-upload-wrapper {
+            background: #333;
+            border: 2px dashed var(--neon);
+            padding: 25px;
+            text-align: center;
+            border-radius: 8px;
+            transition: 0.3s;
+            position: relative;
+        }
+
+        .excel-upload-wrapper:hover {
+            background: #3d3d3d;
+            border-color: #fff;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .custom-file-upload {
+            display: inline-block;
+            padding: 12px 25px;
+            cursor: pointer;
+            background: var(--neon);
+            color: #000;
+            border-radius: 5px;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+
+        #file-name-display {
+            display: block;
+            margin-top: 10px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .grid-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            border: none;
+            transition: 0.2s;
+            background: #39ff14;
+            color: black;
+            text-transform: uppercase;
+        }
+
+        button:hover:not(:disabled) {
+            background: orange !important;
+            color: black !important;
+            transform: scale(1.02);
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-round {
+            background: #39ff14;
+            color: black;
+        }
+
+        .btn-reveal-all {
+            background: aqua;
+            color: black;
+            width: 100%;
+            margin-top: 10px;
+            border: 1px solid #00d9ff;
+        }
+
+        .btn-reset {
+            background: red;
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+            border: 1px solid #f00;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .modal-content {
+            background: #222;
+            margin: 10% auto;
+            padding: 30px;
+            width: 550px;
+            max-width: 90%;
+            border-radius: 15px;
+            border: 3px solid var(--pink);
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 0, 204, 0.5);
+        }
+
+        .category-option {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 15px;
+            background: #111;
+            color: var(--neon);
+            border: 2px solid var(--neon);
+            font-size: 1.1rem;
+        }
+
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+            background: #000;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .key {
+            padding: 12px 2px;
+            font-size: 1.1rem;
+            background: green;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .key.used {
+            background: #111;
+            color: #555 !important;
+            opacity: 0.4;
+            pointer-events: none;
+            border: 1px solid #222;
+        }
+
+        .pos-control {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+
+        .pos-input-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0;
+            min-height: 20px;
+        }
+
+        .pos-input-grid input {
+            width: 45px;
+            padding: 8px;
+            text-align: center;
+            background: #000;
+            color: var(--neon);
+            border: 1px solid var(--neon);
+            border-radius: 4px;
+        }
+
+        .btn-action {
+            background: var(--pink);
+            color: #fff;
+            padding: 12px;
+            font-size: 0.85rem;
+            flex: 1;
+        }
+
+        .quick-controls {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .btn-quick {
+            background: purple;
+            color: white;
+            flex: 1;
+            font-size: 0.7rem;
+            padding: 8px 2px;
+        }
+
+        .st-val {
+            color: var(--neon);
+            font-size: 1.2rem;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .btn-close-popup {
+            background: #555;
+            color: white;
+            padding: 10px 30px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+
+        audio {
+            display: none;
+        }
+
+        .room-panel {
+            position: relative;
+            z-index: 60;
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: sans-serif;
+        }
+
+        .room-title {
+            color: #ff00cc;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .btn-create-room {
+            background-color: #ff0000;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 1rem;
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+        }
+
+        .btn-create-room:hover {
+            background-color: #ffa500;
+        }
+
+        .room-info-box {
+            border: 2px dashed #ff00cc;
+            background-color: #0b0b0b;
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .status-text {
+            color: #f0c;
+            font-weight: bold;
+            font-size: 1.05rem;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .info-line {
+            font-size: 0.95rem;
+            font-weight: bold;
+            margin-top: 6px;
+            text-transform: uppercase;
+        }
+
+        .label-green {
+            color: #00ff00;
+        }
+
+        .val-yellow {
+            color: #ffff00;
+        }
+
+        .val-white {
+            color: #ffffff;
+        }
+
+        .room-link {
+            color: #00ffff;
+            text-decoration: underline;
+            margin-left: 6px;
+            font-size: 0.85rem;
+            word-break: break-all;
+            text-transform: none !important;
+            display: inline-block;
+        }
+
+        .room-link:hover {
+            color: #ffa500;
+        }
+
+        #lockOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.88);
+            z-index: 50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #lockOverlay .lock-msg {
+            color: #ff00cc;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            margin: 0;
+        }
+
+        #lockOverlay .lock-sub {
+            color: #fff;
+            font-size: 0.9rem;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="lockOverlay">
+        <div>
+            <p class="lock-msg">VUI LÒNG BẤM TẠO PHÒNG ĐỂ BẮT ĐẦU</p>
+            <p class="lock-sub">Tất cả chức năng sẽ bị khóa cho đến khi tạo phòng.</p>
+        </div>
+    </div>
+
+    <div class="left-col">
+        <div class="room-panel">
+            <div class="room-title">TẠO PHÒNG VÀ MẬT KHẨU</div>
+
+            <button class="btn-create-room" onclick="generateRoomAndPasswords()">TẠO PHÒNG</button>
+
+            <div id="room-info-display" class="room-info-box">
+                <div class="status-text">ĐÃ TẠO PHÒNG THÀNH CÔNG!</div>
+
+                <div class="info-line">
+                    <span class="label-green">MÃ PHÒNG:</span>
+                    <span id="room-id-val" class="val-yellow"></span>
+                </div>
+
+                <div class="info-line">
+                    <span class="label-green">HOST LINK:</span>
+                    <a id="host-link-val" class="room-link" href="#" target="_blank">-</a>
+                </div>
+
+                <div class="info-line">
+                    <span class="label-green">PUZZLEBOARD LINK:</span>
+                    <a id="puzzle-link-val" class="room-link" href="#" target="_blank">-</a>
+                </div>
+
+                <div class="info-line">
+                    <span class="label-green">PLAYER 1 MẬT KHẨU:</span>
+                    <span id="p1-pass-val" class="val-white"></span>
+                    <a id="p1-link-val" class="room-link" href="#" target="_blank">-</a>
+                </div>
+
+                <div class="info-line">
+                    <span class="label-green">PLAYER 2 MẬT KHẨU:</span>
+                    <span id="p2-pass-val" class="val-white"></span>
+                    <a id="p2-link-val" class="room-link" href="#" target="_blank">-</a>
+                </div>
+
+                <div class="info-line">
+                    <span class="label-green">PLAYER 3 MẬT KHẨU:</span>
+                    <span id="p3-pass-val" class="val-white"></span>
+                    <a id="p3-link-val" class="room-link" href="#" target="_blank">-</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>1. NHẬP DỮ LIỆU EXCEL</h3>
+            <div class="excel-upload-wrapper">
+                <label for="excelFile" class="custom-file-upload">📁 TẢI FILE PUZZLEBOARD1.1.XLSX</label>
+                <input type="file" id="excelFile" accept=".xlsx, .xls">
+                <span id="file-name-display">Chưa chọn tệp nào (Mặc định: PuzzleBoard1.1.xlsx)</span>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>2. HỆ THỐNG VÒNG THI (THEO PUZZLEBOARD 1.1)</h3>
+            <div class="grid-buttons" id="round-list">
+                <button onclick="handleRound('Đoán Nhanh 1', false)">Đoán Nhanh 1</button>
+                <button onclick="handleRound('Đoán Nhanh 2', false)">Đoán Nhanh 2</button>
+                <button class="btn-round" onclick="handleRound('Vòng 1', true)">Vòng 1</button>
+                <button class="btn-round" onclick="handleRound('Vòng 2', true)">Vòng 2</button>
+
+                <button onclick="handleRound('ĐNLH 1', false)">ĐNLH 1</button>
+                <button onclick="handleRound('ĐNLH 2', false)">ĐNLH 2</button>
+                <button onclick="handleRound('ĐNLH 3', false)">ĐNLH 3</button>
+                <button class="btn-round" onclick="handleRound('Vòng 3', true)">Vòng 3</button>
+                <button class="btn-round" onclick="handleRound('Vòng phụ', true)">Vòng phụ</button>
+
+                <button onclick="handleRound('Đoán Nhanh 3', false)">Đoán Nhanh 3</button>
+                <button onclick="handleRound('Đoán Nhanh 4', false)">Đoán Nhanh 4</button>
+                <button class="btn-round" onclick="handleRound('Vòng 4', true)">Vòng 4</button>
+                <button class="btn-round" onclick="handleRound('Vòng 5', true)">Vòng 5</button>
+
+                <button onclick="handleRound('ĐNLH 4', false)">ĐNLH 4</button>
+                <button onclick="handleRound('ĐNLH 5', false)">ĐNLH 5</button>
+                <button onclick="handleRound('ĐNLH 6', false)">ĐNLH 6</button>
+                <button class="btn-round" onclick="handleRound('Vòng 6', true)">Vòng 6</button>
+                <button class="btn-round" style="background: #ff0000; color: white;" onclick="handleRound('Vòng đặc biệt', true)">Vòng ĐB</button>
+            </div>
+
+            <p style="color:var(--pink); margin: 15px 0 5px 0; font-size: 0.8rem;">ĐIỀU KHIỂN CHUÔNG TÍN HIỆU:</p>
+            <div class="grid-buttons">
+                <button style="background: aqua; color: black;" onclick="openBuzzer()">Mở chuông</button>
+                <button style="background: aqua; color: black;" onclick="lockBuzzer()">Khóa chuông</button>
+                <button style="background: aqua; color: black;" onclick="resetAndOpenBuzzer()">Reset và Mở</button>
+                <button style="background: aqua; color: black;" onclick="resetAndLockBuzzer()">Reset và Khóa</button>
+            </div>
+
+            <button id="btn-ngiah" onclick="revealNghia()"
+                style="display:none; width:100%; margin-top:10px; background: purple; color: white;">
+                MỞ CÁC CHỮ: N, G, H, I, A
+            </button>
+
+            <div id="special-guess-panel"
+                style="display:none; margin-top:15px; border: 1px dashed var(--pink); padding: 10px; background: #1a1a1a;">
+                <p style="color:var(--neon); margin:0 0 10px 0; font-size:0.8rem;">CHỮ CÁI ĐOÁN THÊM (TỐI ĐA 10):</p>
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom:10px;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                    <input type="text" class="guess-input" maxlength="1" oninput="this.value = this.value.toUpperCase()"
+                        style="width:100%; text-align:center; background:#000; color:var(--neon); border:1px solid #555; padding: 5px 0; text-transform: uppercase;">
+                </div>
+                <button onclick="processSpecialGuesses()"
+                    style="width:100%; background: var(--neon); color: black; padding: 8px; font-size: 0.8rem;">
+                    XÁC NHẬN
+                </button>
+            </div>
+
+            <div id="quick-panel" style="display:none; margin-top:15px; border: 1px dashed #666; padding: 10px;">
+                <p style="color:var(--neon); margin:0 0 10px 0; font-size:0.8rem;">ĐIỀU KHIỂN ĐOÁN NHANH / ĐNLH:</p>
+                <div class="quick-controls">
+                    <button class="btn-quick" onclick="quickStart()">Bắt đầu hiện chữ</button>
+                    <button class="btn-quick" onclick="quickStop()">Dừng hiện chữ</button>
+                    <button class="btn-quick" onclick="quickResume()">Tiếp tục hiện chữ</button>
+                </div>
+                <div class="quick-controls" style="margin-top: 5px;">
+                    <button style="background: red; color: white; flex: 1; font-size: 0.75rem; padding: 8px 2px;"
+                        onclick="resetCountdown()">Reset Đồng Hồ (45s)</button>
+                </div>
+            </div>
+
+            <div id="special-round-timer-panel"
+                style="display:none; margin-top:15px; border: 1px dashed #666; padding: 10px;">
+                <p style="color:var(--neon); margin:0 0 10px 0; font-size:0.8rem;">ĐIỀU KHIỂN ĐỒNG HỒ VÒNG PHỤ & ĐB:</p>
+                <div class="quick-controls">
+                    <button style="background: blue; color: white; flex: 1; font-size: 0.75rem; padding: 8px 2px;"
+                        onclick="setTimer(30)">30 Giây</button>
+                    <button style="background: yellow; color: black; flex: 1; font-size: 0.75rem; padding: 8px 2px;"
+                        onclick="setTimer(10)">10 Giây</button>
+                    <button style="background: red; color: white; flex: 1; font-size: 0.75rem; padding: 8px 2px;"
+                        onclick="resetCountdown()">Reset Đồng Hồ</button>
+                </div>
+            </div>
+
+            <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                <div>
+                    <label style="color:var(--neon); font-size:0.75rem; display:block; margin-bottom:3px;">OPTION CHỌN
+                        NHẠC 30S:</label>
+                    <select id="select-sound-30s"
+                        style="width:100%; padding:6px; background:#000; color:#fff; border:1px solid #555;">
+                        <option value="30s_vđb_2005.wav">Nhạc 30s VN 1</option>
+                        <option value="30s.mp3">Nhạc 30s VN 2</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="color:var(--neon); font-size:0.75rem; display:block; margin-bottom:3px;">OPTION CHỌN
+                        NHẠC 10S:</label>
+                    <select id="select-sound-10s"
+                        style="width:100%; padding:6px; background:#000; color:#fff; border:1px solid #555;">
+                        <option value="think.mp3">Nhạc 10s VN 1</option>
+                        <option value="10s_2.mp3">Nhạc 10s VN 2</option>
+                        <option value="10s.mp3">Nhạc 10s US</option>
+                        <option value="10s_suy_nghĩ.mp3">Nhạc 10s UK</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                <button class="btn-reveal-all" style="margin-top: 0; flex: 1; background: #39ff14; color: black; border: 1px solid #39ff14;" onclick="revealAll(true)">HIỆN TOÀN BỘ (ĐÚNG)</button>
+                <button class="btn-reveal-all" style="margin-top: 0; flex: 1; background: aqua; color: black; border: 1px solid #00d9ff;" onclick="revealAll(false)">HIỆN TOÀN BỘ (SAI)</button>
+            </div>
+            <button class="btn-reset" onclick="resetBoard()">RESET BẢNG TRỐNG</button>
+            <button onclick="stopAllSounds()"
+                style="background: blue; color: white; font-weight: bold !important; width: 100%; margin-top: 10px; border: 1px solid #0055ff;">
+                DỪNG ÂM THANH
+            </button>
+        </div>
+
+        <div style="margin-top: 10px; margin-bottom: 10px;">
+            <label style="color:var(--pink); font-size:0.85rem; display:block; margin-bottom:5px;">LIST NHẠC MỞ
+                CHỮ:</label>
+            <select id="select-sound-open-word"
+                style="width:100%; padding:8px; background:#000; color:var(--neon); border:1px solid var(--pink);">
+                <option value="Nhac_Mo_chu_US.mp3">Nhạc Mở chữ US</option>
+                <option value="Nhac_mo_chu_VN_1.mp3">Nhạc Mở chữ VN 1</option>
+                <option value="Nhac_mo_chu_VN_2.mp3">Nhạc Mở chữ VN 2</option>
+                <option value="nhac_hien_o_chu.mp3">Nhạc Mở chữ VN 3</option>
+                <option value="none">Không có</option>
+            </select>
+        </div>
+
+        <div style="margin-top: 10px; margin-bottom: 10px;">
+            <label style="color:var(--pink); font-size:0.85rem; display:block; margin-bottom:5px;">LIST NHẠC GIẢI Ô
+                CHỮ:</label>
+            <div style="display: flex; gap: 5px;">
+                <select id="select-sound-solve-puzzle"
+                    style="flex: 1; padding:8px; background:#000; color:var(--neon); border:1px solid var(--pink);">
+                    <option value="toss_up_solve.mp3">Đoán nhanh US</option>
+                    <option value="solve.mp3">Ô chữ US</option>
+                    <option value="solved 2001.mp3">Ô chữ VN 1</option>
+                    <option value="solved.mp3">Ô chữ VN 2</option>
+                    <option value="ClearPuzzle.mp3">Ô chữ VN 3</option>
+                    <option value="none">Không có</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 5px; margin-top: 5px; margin-bottom: 15px;">
+            <button style="background: green; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
+                onclick="triggerSound('tossup.mp3')">Đoán nhanh</button>
+        </div>
+
+        <div class="panel">
+            <h3>3. BÀN PHÍM ĐIỀU KHIỂN</h3>
+            <div id="keyboard" class="keyboard"></div>
+
+            <div class="pos-control">
+                <p style="margin-top:0; font-size:0.9rem; color:var(--pink);">MỞ Ô THEO VỊ TRÍ:</p>
+                <input type="number" id="numPos" placeholder="Nhập số ô cần mở..."
+                    style="width: 100%; padding: 12px; background:#000; color:#fff; border:1px solid #555; box-sizing: border-box;"
+                    oninput="generatePosInputs()">
+
+                <div id="posContainer" class="pos-input-grid"></div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnPos1" class="btn-action" onclick="processSequence(1)">Mở lần 1: Đánh dấu</button>
+                    <button id="btnPos2" class="btn-action" onclick="processSequence(2)">Mở lần 2: Mở chữ</button>
+                </div>
+
+                <!-- BỔ SUNG MỤC KHÔI PHỤC CHỮ CÁI -->
+                <div style="margin-top: 12px; border-top: 1px dashed #555; padding-top: 10px;">
+                    <p style="margin: 0 0 8px 0; font-size: 0.85rem; color: var(--pink);">KHÔI PHỤC CHỮ CÁI:</p>
+                    <div id="restoreContainer" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 28px;"></div>
+                </div>
+
+                <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                    <div>
+                        <label style="color:var(--neon); font-size:0.8rem; display:block; margin-bottom:3px;">LIST NHẠC
+                            MỞ Ô LẦN 1:</label>
+                        <select id="select-sound-step1"
+                            style="width:100%; padding:8px; background:#000; color:#fff; border:1px solid #555;">
+                            <option value="Mo_o_US.mp3">Mở ô US</option>
+                            <option value="Mo_o_Lan_1_VN_1.mp3">Mở ô lần 1 VN 1</option>
+                            <option value="Mo_o_Lan_1_VN_2.mp3">Mở ô lần 1 VN 2</option>
+                            <option value="none">Không có</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="color:var(--neon); font-size:0.8rem; display:block; margin-bottom:3px;">LIST NHẠC
+                            MỞ Ô LẦN 2:</label>
+                        <select id="select-sound-step2"
+                            style="width:100%; padding:8px; background:#000; color:#fff; border:1px solid #555;">
+                            <option value="Mo_o_Lan_2_VN_1.mp3">Mở ô lần 2 VN 1</option>
+                            <option value="Mo_o_Lan_2_VN_2.mp3">Mở ô lần 2 VN 2</option>
+                            <option value="none">Không có</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 5px; margin-top: 5px;">
+                        <button style="background: green; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
+                            onclick="triggerSound('mo o chu 2001 2.mp3')">VN 2001</button>
+                    </div>
+                    <div style="display: flex; gap: 5px; margin-top: 5px;">
+                        <button style="background: red; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
+                            onclick="triggerSound('Sai_US.mp3')">Sai US</button>
+                        <button style="background: red; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
+                            onclick="triggerSound('Sai_VN_1.mp3')">Sai VN 1</button>
+                        <button style="background: red; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
+                            onclick="triggerSound('Sai_VN_2.mp3')">Sai VN 2</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-col">
+        <div class="panel">
+            <h3>TRẠNG THÁI HIỆN TẠI</h3>
+            <p>Vòng: <span id="st-round" class="st-val">-</span></p>
+            <p>Chủ đề: <span id="st-cat" class="st-val">-</span></p>
+            <p>Ô chữ: <span id="st-puz" class="st-val">-</span></p>
+            <p>Đồng hồ ĐB: <span id="st-timer" class="st-val">45</span>s</p>
+        </div>
+
+        <div class="color-control-section" style="margin-top: 20px; border-top: 1px solid #333;">
+            <h3 style="color: #ff00cc; font-size: 14px; margin-bottom: 10px;">MÀU VIỀN Ô CHỮ</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button onclick="changeBorderColor('rgb(128,0,128)')"
+                    style="background: transparent; border: 2px solid rgb(128,0,128); color: white; cursor: pointer; padding: 5px;">Tím</button>
+                <button onclick="changeBorderColor('rgb(255,0,0)')"
+                    style="background: transparent; border: 2px solid rgb(255,0,0); color: white; cursor: pointer; padding: 5px;">Đỏ</button>
+                <button onclick="changeBorderColor('rgb(255,255,0)')"
+                    style="background: transparent; border: 2px solid rgb(255,255,0); color: white; cursor: pointer; padding: 5px;">Vàng</button>
+                <button onclick="changeBorderColor('rgb(0,0,255)')"
+                    style="background: transparent; border: 2px solid rgb(0,0,255); color: white; cursor: pointer; padding: 5px;">Xanh</button>
+                <button onclick="changeBorderColor('rgb(0,255,0)')"
+                    style="background: transparent; border: 2px solid rgb(0, 255, 0); color: white; cursor: pointer; padding: 5px;">Xanh
+                    Lá</button>
+                <button onclick="changeBorderColor('rgb(255,255,255)')"
+                    style="background: #222; border: 2px solid rgb(255,255,255); color: #fff; cursor: pointer; padding: 5px; text-shadow: 0 0 2px #000;">Trắng</button>
+            </div>
+        </div>
+
+        <div class="score-control-section" style="margin-top: 20px;">
+            <div class="player-panel"
+                style="border: 1px solid #444; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
+                <p style="margin: 0 0 5px 0; color: red; font-size: 12px;">NC ĐỎ</p>
+                <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                    <div id="disp-red-total"
+                        style="flex: 1; padding: 5px; text-align: center; background:red; color:white;">0</div>
+                    <div id="disp-red-round"
+                        style="flex: 1; padding: 5px; text-align: center; background:red; color:white;">0</div>
+                </div>
+                <div style="margin-bottom: 5px; font-size: 11px; color: #fff;">
+                    <input type="checkbox" id="chk-red-last-spin" style="cursor: pointer;">
+                    <label for="chk-red-last-spin" style="cursor: pointer;">Lượt quay cuối cùng</label>
+                </div>
+                <input type="text" id="input-red"
+                    style="width:100%; padding:8px; background:#000; color:#fff; border:1px solid #555; margin-bottom:5px;"
+                    placeholder="Nhập điểm..." oninput="formatInput(this)">
+                <div style="display: flex; gap: 5px;">
+                    <button style="background:green; color:white; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="addScore('red', 'total')">TỔNG +</button>
+                    <button style="background:#39ff14; color:black; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="addScore('red', 'round')">VÒNG +</button>
+                    <button style="background:aqua; color:black; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="subScore('red', 'round')">VÒNG -</button>
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 5px;">
+                    <button onclick="updatePlayerLight('red', 'color')"
+                        style="background: #ff0000; color: #fff; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        màu</button>
+                    <button onclick="updatePlayerLight('red', 'black')"
+                        style="background: #000000; color: #fff; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        đen</button>
+                    <button onclick="updatePlayerLight('red', 'white')"
+                        style="background: #ffffff; color: #000; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        trắng</button>
+                </div>
+                <div style="margin-top: 5px; display: flex; gap: 5px;">
+                    <button onclick="multiplyScore('red', 1.5)"
+                        style="background: red; color: #fff; flex: 1; padding: 5px; font-size: 11px;">x1.5</button>
+                    <button onclick="multiplyScore('red', 2)"
+                        style="background: red; color: #fff; flex: 1; padding: 5px; font-size: 11px;">x2</button>
+                    <button onclick="multiplyScore('red', 0.5)"
+                        style="background: red; color: #fff; flex: 1; padding: 5px; font-size: 11px;">:2</button>
+                </div>
+                <div style="margin-top: 5px; display: flex; gap: 5px;">
+                    <button onclick="resetPlayerScore('red', 'round')"
+                        style="background: red; color: #fff; flex: 1; padding: 5px; font-size: 10px;">Reset
+                        vòng</button>
+                    <button onclick="resetPlayerScore('red', 'total')"
+                        style="background: red; color: #fff; flex: 1; padding: 5px; font-size: 10px;">Reset
+                        tổng</button>
+                </div>
+            </div>
+
+            <div class="player-panel"
+                style="border: 1px solid #444; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
+                <p style="margin: 0 0 5px 0; color: yellow; font-size: 12px;">NC VÀNG</p>
+                <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                    <div id="disp-yellow-total"
+                        style="flex: 1; padding: 5px; text-align: center; background:yellow; color:black;">0</div>
+                    <div id="disp-yellow-round"
+                        style="flex: 1; padding: 5px; text-align: center; background:yellow; color:black;">0</div>
+                </div>
+                <input type="text" id="input-yellow"
+                    style="width:100%; padding:8px; background:#000; color:#fff; border:1px solid #555; margin-bottom:5px;"
+                    placeholder="Nhập điểm..." oninput="formatInput(this)">
+                <div style="margin-bottom: 5px; font-size: 11px; color: #fff;">
+                    <input type="checkbox" id="chk-yellow-last-spin" style="cursor: pointer;">
+                    <label for="chk-yellow-last-spin" style="cursor: pointer;">Lượt quay cuối cùng</label>
+                </div>
+                <div style="display: flex; gap: 5px;">
+                    <button style="background:green; color:white; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="addScore('yellow', 'total')">TỔNG +</button>
+                    <button style="background:#39ff14; color:black; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="addScore('yellow', 'round')">VÒNG +</button>
+                    <button style="background:aqua; color:black; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="subScore('yellow', 'round')">VÒNG -</button>
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 5px;">
+                    <button onclick="updatePlayerLight('yellow', 'color')"
+                        style="background: #ffff00; color: #000; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        màu</button>
+                    <button onclick="updatePlayerLight('yellow', 'black')"
+                        style="background: #000000; color: #fff; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        đen</button>
+                    <button onclick="updatePlayerLight('yellow', 'white')"
+                        style="background: #ffffff; color: #000; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        trắng</button>
+                </div>
+                <div style="margin-top: 5px; display: flex; gap: 5px;">
+                    <button onclick="multiplyScore('yellow', 1.5)"
+                        style="background: yellow; color: #000; flex: 1; padding: 5px; font-size: 11px;">x1.5</button>
+                    <button onclick="multiplyScore('yellow', 2)"
+                        style="background: yellow; color: #000; flex: 1; padding: 5px; font-size: 11px;">x2</button>
+                    <button onclick="multiplyScore('yellow', 0.5)"
+                        style="background: yellow; color: #000; flex: 1; padding: 5px; font-size: 11px;">:2</button>
+                </div>
+                <div style="margin-top: 5px; display: flex; gap: 5px;">
+                    <button onclick="resetPlayerScore('yellow', 'round')"
+                        style="background: yellow; color: #000; flex: 1; padding: 5px; font-size: 10px;">Reset
+                        vòng</button>
+                    <button onclick="resetPlayerScore('yellow', 'total')"
+                        style="background: yellow; color: #000; flex: 1; padding: 5px; font-size: 10px;">Reset
+                        tổng</button>
+                </div>
+            </div>
+
+            <div class="player-panel"
+                style="border: 1px solid #444; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
+                <p style="margin: 0 0 5px 0; color: #008cff; font-size: 12px;">NC XANH</p>
+                <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                    <div id="disp-blue-total"
+                        style="flex: 1; padding: 5px; text-align: center; background:blue; color:white;">0</div>
+                    <div id="disp-blue-round"
+                        style="flex: 1; padding: 5px; text-align: center; background:blue; color:white;">0</div>
+                </div>
+                <input type="text" id="input-blue"
+                    style="width:100%; padding:8px; background:#000; color:#fff; border:1px solid #555; margin-bottom:5px;"
+                    placeholder="Nhập điểm..." oninput="formatInput(this)">
+                <div style="margin-bottom: 5px; font-size: 11px; color: #fff;">
+                    <input type="checkbox" id="chk-blue-last-spin" style="cursor: pointer;">
+                    <label for="chk-blue-last-spin" style="cursor: pointer;">Lượt quay cuối cùng</label>
+                </div>
+                <div style="display: flex; gap: 5px;">
+                    <button style="background:green; color:white; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="addScore('blue', 'total')">TỔNG +</button>
+                    <button style="background:#39ff14; color:black; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="addScore('blue', 'round')">VÒNG +</button>
+                    <button style="background:aqua; color:black; font-size: 10px; padding: 5px; flex: 1;"
+                        onclick="subScore('blue', 'round')">VÒNG -</button>
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 5px;">
+                    <button onclick="updatePlayerLight('blue', 'color')"
+                        style="background: #0000ff; color: #fff; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        màu</button>
+                    <button onclick="updatePlayerLight('blue', 'black')"
+                        style="background: #000000; color: #fff; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        đen</button>
+                    <button onclick="updatePlayerLight('blue', 'white')"
+                        style="background: #ffffff; color: #000; flex: 1; padding: 5px; cursor: pointer; font-size: 12px;">Đèn
+                        trắng</button>
+                </div>
+                <div style="margin-top: 5px; display: flex; gap: 5px;">
+                    <button onclick="multiplyScore('blue', 1.5)"
+                        style="background: blue; color: #fff; flex: 1; padding: 5px; font-size: 11px;">x1.5</button>
+                    <button onclick="multiplyScore('blue', 2)"
+                        style="background: blue; color: #fff; flex: 1; padding: 5px; font-size: 11px;">x2</button>
+                    <button onclick="multiplyScore('blue', 0.5)"
+                        style="background: blue; color: #fff; flex: 1; padding: 5px; font-size: 11px;">:2</button>
+                </div>
+                <div style="margin-top: 5px; display: flex; gap: 5px;">
+                    <button onclick="resetPlayerScore('blue', 'round')"
+                        style="background: blue; color: #fff; flex: 1; padding: 5px; font-size: 10px;">Reset
+                        vòng</button>
+                    <button onclick="resetPlayerScore('blue', 'total')"
+                        style="background: blue; color: #fff; flex: 1; padding: 5px; font-size: 10px;">Reset
+                        tổng</button>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                <button style="background:purple; color:white;" onclick="resetScores('round')">RESET ĐIỂM VÒNG</button>
+                <button style="background:purple; color:white;" onclick="resetScores('total')">RESET ĐIỂM TỔNG</button>
+                <button style="background:blue; color:white;" onclick="toggleDisplayScore('round')">HIỆN ĐIỂM
+                    VÒNG</button>
+                <button style="background:blue; color:white;" onclick="toggleDisplayScore('total')">HIỆN ĐIỂM
+                    TỔNG</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle" style="color: var(--pink); margin-top: 0;"></h2>
+            <div id="modalBody" style="font-size: 1.1rem; margin: 20px 0; color: #fff;"></div>
+            <div id="modalActions"></div>
+            <button class="btn-close-popup" onclick="closePopup()">ĐÓNG</button>
+        </div>
+    </div>
+
+    <audio id="buzzerSound" src="buzzer.mp3" preload="auto"></audio>
+
+    <script>
+        var SUPABASE_URL = 'https://tfdgtdderkaergijhucb.supabase.co';
+        var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmZGd0ZGRlcmthZXJnaWpodWNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0NjM5MzksImV4cCI6MjA5NDAzOTkzOX0._BOLe4xH5ZuhfXfsdS63eY9N12wyomq58GG0toi1aIE';
+        var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const VIETNAMESE_ALPHABET = "AĂÂBCDĐEÊGHIKLMNOÔƠPQRSTUƯVXY".split('');
+        let excelData = [];
+        let currentRoundData = null;
+        let selectedRoundName = "";
+        let usedChars = [];
+        let currentPuzzleRaw = "";
+        let currentLayout = null;
+        let quickInterval = null;
+        let countdownInterval = null;
+        let countdownValue = 45;
+        let scores = { red: { total: 0, round: 0 }, yellow: { total: 0, round: 0 }, blue: { total: 0, round: 0 } };
+        let specialRoundCatIndex = 0;
+        let currentRoomId = (new URLSearchParams(window.location.search)).get('roomid') || '1000';
+        let lastBuzzerState = 0;
+
+        const COL_MAP = {
+            P1: { cat: 1, cols12: [3, 14], cols14: [2, 15] },
+            P2: { cat: 16, cols12: [18, 29], cols14: [17, 30] },
+            P3: { cat: 31, cols12: [33, 44], cols14: [32, 45] }
+        };
+
+        window.onload = async () => {
+            renderKeyboard();
+            const urlParams = new URLSearchParams(window.location.search);
+            const rId = urlParams.get('roomid');
+            if (rId) {
+                currentRoomId = rId;
+                document.getElementById('lockOverlay').style.display = 'none';
+                document.getElementById('room-id-val').innerText = rId;
+                document.getElementById('room-info-display').style.display = 'block';
+            }
+            await loadCurrentState();
+            setupRealtime();
+            tryAutoLoadDefaultExcel();
+        };
+
+        async function tryAutoLoadDefaultExcel() {
+            try {
+                const res = await fetch('PuzzleBoard1.1.xlsx');
+                if (res.ok) {
+                    const buf = await res.arrayBuffer();
+                    await loadExcelFromBuffer(buf, "PuzzleBoard1.1.xlsx");
+                }
+            } catch (e) {
+                console.log("Không thể nạp tự động PuzzleBoard1.1.xlsx:", e);
+            }
+        }
+
+        function setupRealtime() {
+            db.channel('controller_buzz_3rd').on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'wheel_game',
+                filter: 'room_id=eq.' + currentRoomId
+            }, payload => {
+                const newData = payload.new;
+                if (!newData) return;
+
+                if ('buzzer_player' in newData) {
+                    const bp = newData.buzzer_player;
+                    const hasBuzzed = (bp !== null && bp !== undefined && String(bp).trim() !== '' && bp !== 0 && bp !== '0');
+                    if (hasBuzzed && bp !== lastBuzzerState) {
+                        playBuzzer();
+                        quickStop();
+                    }
+                    lastBuzzerState = bp;
+                }
+
+                if (newData.score_red_round !== undefined) scores.red.round = newData.score_red_round;
+                if (newData.score_red_total !== undefined) scores.red.total = newData.score_red_total;
+                if (newData.score_yellow_round !== undefined) scores.yellow.round = newData.score_yellow_round;
+                if (newData.score_yellow_total !== undefined) scores.yellow.total = newData.score_yellow_total;
+                if (newData.score_blue_round !== undefined) scores.blue.round = newData.score_blue_round;
+                if (newData.score_blue_total !== undefined) scores.blue.total = newData.score_blue_total;
+                updateScoreUI();
+
+                if (newData.revealed_chars !== undefined) {
+                    usedChars = newData.revealed_chars ? newData.revealed_chars.split(',').filter(Boolean) : [];
+                    renderKeyboard();
+                }
+            }).subscribe();
+
+            setInterval(async () => {
+                if (quickInterval || countdownInterval) {
+                    const { data } = await db.from('wheel_game')
+                        .select('buzzer_player')
+                        .eq('room_id', currentRoomId)
+                        .maybeSingle();
+                    if (data && data.buzzer_player && String(data.buzzer_player).trim() !== '' && data.buzzer_player !== 0 && data.buzzer_player !== '0') {
+                        quickStop();
+                    }
+                }
+            }, 300);
+        }
+
+        function triggerSound(fileName) {
+            if (!fileName || fileName === 'none') return;
+            const soundSignal = fileName + "?t=" + Date.now();
+            db.from('wheel_game')
+                .update({ current_sound: soundSignal })
+                .eq('room_id', currentRoomId)
+                .then(({ error }) => {
+                    if (error) console.error("Lỗi gửi âm thanh:", error);
+                });
+        }
+
+        function triggerSelectedOpenWordSound() {
+            const selectElem = document.getElementById('select-sound-open-word');
+            if (selectElem && selectElem.value) {
+                triggerSound(selectElem.value);
+            }
+        }
+
+        function getPuzzleStringWithSpaces(layout, isTungHoanh = false) {
+            if (!layout || !Array.isArray(layout)) return "-";
+            const words = [];
+            let currentWord = "";
+
+            const isEmptyCell = (value) => {
+                if (value == null) return true;
+                const cell = typeof value === 'object' ? (value.char || value.v || '') : String(value);
+                const s = String(cell).trim();
+                return s === "" || /^(null|undefined|nan)$/i.test(s);
+            };
+
+            const getChar = (val) => {
+                if (val == null) return "";
+                if (typeof val === 'object') return String(val.char || val.v || '').trim();
+                return String(val).trim();
+            };
+
+            if (isTungHoanh) {
+                layout.forEach(row => {
+                    if (!Array.isArray(row)) return;
+                    currentWord = "";
+                    for (let i = 0; i < row.length; i++) {
+                        const char = getChar(row[i]);
+                        if (!isEmptyCell(row[i])) {
+                            currentWord += char;
+                        } else {
+                            if (currentWord.length > 1) words.push(currentWord);
+                            currentWord = "";
+                        }
+                    }
+                    if (currentWord.length > 1) words.push(currentWord);
+                });
+
+                const numCols = Math.max(...layout.map(row => Array.isArray(row) ? row.length : 0));
+                for (let c = 0; c < numCols; c++) {
+                    currentWord = "";
+                    for (let r = 0; r < layout.length; r++) {
+                        if (layout[r] && !isEmptyCell(layout[r][c])) {
+                            currentWord += getChar(layout[r][c]);
+                        } else {
+                            if (currentWord.length > 1) words.push(currentWord);
+                            currentWord = "";
+                        }
+                    }
+                    if (currentWord.length > 1) words.push(currentWord);
+                }
+            } else {
+                layout.forEach(row => {
+                    if (!Array.isArray(row)) return;
+                    currentWord = "";
+                    for (let i = 0; i < row.length; i++) {
+                        const char = getChar(row[i]);
+                        if (!isEmptyCell(row[i])) {
+                            currentWord += char;
+                        } else if (currentWord !== "") {
+                            words.push(currentWord);
+                            currentWord = "";
+                        }
+                    }
+                    if (currentWord !== "") {
+                        words.push(currentWord);
+                    }
+                });
+            }
+
+            return words.join(" ") || "-";
+        }
+
+        async function loadCurrentState() {
+            const { data, error } = await db.from('wheel_game').select('*').eq('room_id', currentRoomId).maybeSingle();
+            if (data) {
+                scores.red.total = data.score_red_total || 0;
+                scores.red.round = data.score_red_round || 0;
+                scores.yellow.total = data.score_yellow_total || 0;
+                scores.yellow.round = data.score_yellow_round || 0;
+                scores.blue.total = data.score_blue_total || 0;
+                scores.blue.round = data.score_blue_round || 0;
+
+                usedChars = data.revealed_chars ? data.revealed_chars.split(',').filter(Boolean) : [];
+                currentPuzzleRaw = data.puzzle_text || "";
+
+                if (data.board_layout) {
+                    try { currentLayout = JSON.parse(data.board_layout); } catch (e) { currentLayout = null; }
+                }
+
+                if ('timer' in data) {
+                    countdownValue = data.timer !== null && data.timer !== undefined ? data.timer : 45;
+                    document.getElementById('st-timer').innerText = countdownValue;
+                }
+
+                document.getElementById('st-cat').innerText = data.category || "-";
+
+                const catUpper = String(data.category || "").toUpperCase();
+                const isTungHoanh = catUpper.includes('TUNG HOÀNH') || catUpper.includes('TUNG HOANH');
+
+                document.getElementById('st-puz').innerText = currentLayout
+                    ? getPuzzleStringWithSpaces(currentLayout, isTungHoanh)
+                    : (currentPuzzleRaw || "-");
+
+                updateScoreUI();
+                renderKeyboard();
+                if ('buzzer_player' in data) lastBuzzerState = data.buzzer_player;
+            }
+        }
+
+        function getExcelCellText(val) {
+            if (val == null) return '';
+            if (typeof val === 'object') {
+                if (val.richText && Array.isArray(val.richText)) {
+                    return val.richText.map(t => t.text || '').join('').trim();
+                }
+                if (val.text != null) return String(val.text).trim();
+                if (val.result != null) return String(val.result).trim();
+            }
+            return String(val).trim();
+        }
+
+        function buildLayoutFromBlock(block, config) {
+            const layout = [];
+            const { cols12, cols14 } = config;
+
+            const getChars = (rowArr, start, end) => {
+                const result = [];
+                for (let i = start; i <= end; i++) {
+                    const cellObj = rowArr ? rowArr[i] : null;
+                    if (cellObj == null || cellObj === '') {
+                        result.push("");
+                        continue;
+                    }
+                    const text = typeof cellObj === 'object' && cellObj.v != null ? cellObj.v : cellObj;
+                    const char = String(text || '').trim();
+                    result.push(char !== "" ? char : "");
+                }
+                return result;
+            };
+
+            layout.push(["", ...getChars(block[0], cols12[0], cols12[1]), ""]);
+            layout.push(getChars(block[1], cols14[0], cols14[1]));
+            layout.push(getChars(block[2], cols14[0], cols14[1]));
+            layout.push(["", ...getChars(block[3], cols12[0], cols12[1]), ""]);
+
+            return layout;
+        }
+
+        async function loadExcelFromBuffer(arrayBuffer, fileName = "PuzzleBoard1.1.xlsx") {
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(arrayBuffer);
+            const worksheet = workbook.worksheets[0];
+            if (!worksheet) return;
+
+            const dim = worksheet.dimensions;
+            const maxRow = dim ? dim.bottom : (worksheet.rowCount || 0);
+            const maxCol = dim ? dim.right : (worksheet.columnCount || 0);
+            const rows = [];
+            for (let r = 1; r <= maxRow; r++) {
+                const rowData = [];
+                const row = worksheet.getRow(r);
+                for (let c = 1; c <= maxCol; c++) {
+                    const text = getExcelCellText(row.getCell(c).value);
+                    rowData[c - 1] = text !== '' ? { v: text } : null;
+                }
+                rows[r - 1] = rowData;
+            }
+
+            excelData = [];
+            for (let i = 1; i < rows.length; i += 4) {
+                const block = rows.slice(i, i + 4);
+                const roundName = (block[0] && block[0][0] && block[0][0].v) ? String(block[0][0].v).trim() : '';
+                if (!roundName) continue;
+
+                const options = [];
+                ["P1", "P2", "P3"].forEach(key => {
+                    const config = COL_MAP[key];
+                    const catObj = block[0] && block[0][config.cat];
+                    const catName = catObj && catObj.v != null ? String(catObj.v).trim() : '';
+                    if (catName) {
+                        options.push({
+                            cat: catName,
+                            layout: buildLayoutFromBlock(block, config)
+                        });
+                    }
+                });
+
+                if (options.length > 0) {
+                    excelData.push({ Vong: roundName, Options: options });
+                }
+            }
+
+            document.getElementById('file-name-display').innerText = "📁 " + fileName;
+            showPopup("Hệ Thống", `Đã nạp file Excel thành công! Nhận diện ${excelData.length} vòng thi.`);
+        }
+
+        document.getElementById('excelFile').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                await loadExcelFromBuffer(arrayBuffer, file.name);
+            } catch (err) {
+                console.error(err);
+                showPopup("Lỗi", "Không đọc được file Excel: " + err.message);
+            }
+        });
+
+        function handleRound(roundName, hasPopup) {
+            selectedRoundName = roundName;
+            currentRoundData = excelData.find(d => String(d.Vong).trim().toLowerCase() === roundName.trim().toLowerCase())
+                || excelData.find(d => String(d.Vong).toLowerCase().includes(roundName.toLowerCase()));
+
+            if (!currentRoundData) {
+                showPopup("Thông báo", "Không tìm thấy dữ liệu cho vòng: " + roundName);
+                return;
+            }
+
+            const isQuick = ["Đoán Nhanh", "ĐNLH"].some(t => roundName.includes(t));
+            const rnLower = roundName.toLowerCase();
+            const isSpecialRound = rnLower.includes('đặc biệt') || rnLower.includes('vòng phụ');
+            const isSpecialRoundOnly = rnLower.includes('đặc biệt') || rnLower.includes('vòng phụ');
+
+            document.getElementById('quick-panel').style.display = isQuick ? 'block' : 'none';
+            document.getElementById('btn-ngiah').style.display = isSpecialRound ? 'block' : 'none';
+            document.getElementById('special-guess-panel').style.display = isSpecialRound ? 'block' : 'none';
+            document.getElementById('special-round-timer-panel').style.display = isSpecialRoundOnly ? 'block' : 'none';
+
+            if (!hasPopup || currentRoundData.Options.length === 1) {
+                sendToBoard(currentRoundData.Options[0].cat, currentRoundData.Options[0].layout);
+            } else {
+                const actions = `
+                    <button onclick="loadFixedPuzzle()" style="background: var(--pink);color: white; width: 100%; padding: 15px; margin-bottom: 10px;">Ô CHỮ CỐ ĐỊNH (CHỦ ĐỀ 1)</button>
+                    <button onclick="showCategoryPicker()" style="background: red;color: white; width: 100%; padding: 15px;">CHỌN 1 TRONG 3 CHỦ ĐỀ</button>
+                `;
+                showPopup(roundName, "Lựa chọn chế độ:", actions);
+            }
+        }
+
+        function loadFixedPuzzle() {
+            sendToBoard(currentRoundData.Options[0].cat, currentRoundData.Options[0].layout);
+            closePopup();
+        }
+
+        function showCategoryPicker() {
+            let btns = ``;
+            currentRoundData.Options.forEach((opt, idx) => {
+                btns += `<button class="category-option" onclick="selectCategoryByIndex(${idx}); closePopup();">${opt.cat.toUpperCase()}</button>`;
+            });
+            showPopup(selectedRoundName, "Danh sách chủ đề:", btns);
+        }
+
+        function selectCategoryByIndex(idx) {
+            const opt = currentRoundData.Options[idx];
+            if (opt) sendToBoard(opt.cat, opt.layout);
+        }
+
+        async function sendToBoard(cat, layout) {
+            currentLayout = layout;
+
+            const catUpper = String(cat || "").toUpperCase();
+            const isTungHoanh = catUpper.includes('TUNG HOÀNH') || catUpper.includes('TUNG HOANH');
+            const rawText = getPuzzleStringWithSpaces(layout, isTungHoanh);
+
+            currentPuzzleRaw = rawText;
+            usedChars = [];
+
+            const { error } = await db.from('wheel_game').update({
+                puzzle_text: rawText,
+                category: String(cat).toUpperCase(),
+                revealed_chars: "",
+                pending_positions: "",
+                marked_positions: "",
+                revealed_positions: "",
+                board_layout: JSON.stringify(layout),
+                is_full_reveal: false
+            }).eq('room_id', currentRoomId);
+
+            if (!error) {
+                document.getElementById('st-round').innerText = selectedRoundName;
+                document.getElementById('st-cat').innerText = cat;
+                document.getElementById('st-puz').innerText = rawText;
+                renderKeyboard();
+                triggerSelectedOpenWordSound();
+            } else {
+                console.error("Lỗi cập nhật bảng:", error);
+            }
+        }
+
+        function generatePosInputs() {
+            const num = parseInt(document.getElementById('numPos').value);
+            const container = document.getElementById('posContainer');
+            container.innerHTML = '';
+            if (isNaN(num) || num <= 0) return;
+            for (let i = 0; i < num; i++) {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.placeholder = '#' + (i + 1);
+                input.className = 'pos-item';
+                container.appendChild(input);
+            }
+        }
+
+        function rcToPosition(r, c) {
+            if (r === 0) { if (c < 1 || c > 12) return null; return c; }
+            if (r === 1) { if (c < 0 || c > 13) return null; return 13 + c; }
+            if (r === 2) { if (c < 0 || c > 13) return null; return 27 + c; }
+            if (r === 3) { if (c < 1 || c > 12) return null; return 40 + c; }
+            return null;
+        }
+
+        function positionToRC(pos) {
+            if (pos < 1 || pos > 52) return null;
+            if (pos <= 12) return { r: 0, c: pos };
+            if (pos <= 26) return { r: 1, c: pos - 13 };
+            if (pos <= 40) return { r: 2, c: pos - 27 };
+            return { r: 3, c: pos - 40 };
+        }
+
+        async function processSequence(mode) {
+            const inputs = document.querySelectorAll('.pos-item');
+            let positions = Array.from(inputs)
+                .map(inp => parseInt(inp.value, 10))
+                .filter(v => !isNaN(v) && v >= 1 && v <= 52);
+            positions = [...new Set(positions)];
+
+            if (positions.length === 0 || !currentLayout) return;
+
+            const { data: row } = await db.from('wheel_game').select('marked_positions, revealed_positions').eq('room_id', currentRoomId).maybeSingle();
+
+            let marked = (row && row.marked_positions) ? row.marked_positions.split(',').filter(Boolean).map(Number) : [];
+            let revPos = (row && row.revealed_positions) ? row.revealed_positions.split(',').filter(Boolean).map(Number) : [];
+
+            if (mode === 2) {
+                positions = positions.filter(pos => marked.includes(pos));
+                if (positions.length === 0) return;
+            }
+
+            const soundStep1 = document.getElementById('select-sound-step1')?.value;
+            const soundStep2 = document.getElementById('select-sound-step2')?.value;
+
+            for (let i = 0; i < positions.length; i++) {
+                const pos = positions[i];
+
+                try {
+                    if (mode === 1) {
+                        if (!marked.includes(pos)) marked.push(pos);
+
+                        await db.from('wheel_game').update({
+                            marked_positions: marked.join(',')
+                        }).eq('room_id', currentRoomId);
+
+                        if (soundStep1 && soundStep1 !== 'none') {
+                            triggerSound(soundStep1);
+                        }
+                    }
+                    else if (mode === 2) {
+                        const rc = positionToRC(pos);
+                        let cellVal = currentLayout[rc.r] ? currentLayout[rc.r][rc.c] : null;
+                        let ch = typeof cellVal === 'object' ? (cellVal.char || cellVal.v || '') : cellVal;
+
+                        if (ch) {
+                            if (!revPos.includes(pos)) revPos.push(pos);
+                            marked = marked.filter(p => p !== pos);
+
+                            await db.from('wheel_game').update({
+                                marked_positions: marked.join(','),
+                                revealed_positions: revPos.join(',')
+                            }).eq('room_id', currentRoomId);
+
+                            if (soundStep2 && soundStep2 !== 'none') {
+                                triggerSound(soundStep2);
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Lỗi xử lý tại ô ${pos}:`, err);
+                }
+
+                if (i < positions.length - 1) {
+                    await new Promise(r => setTimeout(r, 1200));
+                }
+            }
+
+            await db.from('wheel_game').update({ pending_positions: '' }).eq('room_id', currentRoomId);
+        }
+
+        async function quickStart() {
+            if (quickInterval) {
+                clearInterval(quickInterval);
+                quickInterval = null;
+            }
+            stopCountdown();
+            usedChars = [];
+
+            let updatePayload = {
+                revealed_positions: "",
+                marked_positions: "",
+                pending_positions: "",
+                revealed_chars: "",
+                is_buzzer_locked: false,
+                buzzer_player: "",
+                border_color: 'rgb(128,0,128)',
+                timer: 0
+            };
+
+            await db.from('wheel_game').update(updatePayload).eq('room_id', currentRoomId);
+            renderKeyboard();
+            quickResume();
+        }
+
+        function quickStop() {
+            if (quickInterval) {
+                clearInterval(quickInterval);
+                quickInterval = null;
+            }
+            stopCountdown();
+        }
+
+        async function quickResume() {
+            if (quickInterval) {
+                clearInterval(quickInterval);
+                quickInterval = null;
+            }
+
+            await db.from('wheel_game').update({
+                is_buzzer_locked: false,
+                buzzer_player: "",
+                border_color: 'rgb(128,0,128)'
+            }).eq('room_id', currentRoomId);
+
+            quickInterval = setInterval(async () => {
+                const { data } = await db.from('wheel_game').select('revealed_positions, buzzer_player').eq('room_id', currentRoomId).single();
+                if (data && data.buzzer_player && String(data.buzzer_player).trim() !== "" && data.buzzer_player !== "0" && data.buzzer_player !== 0) {
+                    quickStop();
+                    return;
+                }
+                let revPos = data && data.revealed_positions ? data.revealed_positions.split(',').filter(Boolean).map(Number) : [];
+
+                let availablePositions = [];
+                for (let r = 0; r < 4; r++) {
+                    for (let c = 0; c < 14; c++) {
+                        let cellData = currentLayout ? currentLayout[r][c] : null;
+                        let char = (cellData && typeof cellData === 'object') ? (cellData.char || cellData.v) : cellData;
+
+                        if (char && String(char).trim() !== "") {
+                            let pos = rcToPosition(r, c);
+                            if (pos && !revPos.includes(pos)) {
+                                availablePositions.push(pos);
+                            }
+                        }
+                    }
+                }
+
+                if (availablePositions.length === 0) {
+                    clearInterval(quickInterval);
+                    quickInterval = null;
+                    return;
+                }
+
+                const randomPos = availablePositions[Math.floor(Math.random() * availablePositions.length)];
+                revPos.push(randomPos);
+
+                await db.from('wheel_game').update({
+                    revealed_positions: revPos.join(',')
+                }).eq('room_id', currentRoomId);
+
+            }, 700);
+        }
+
+        function startCountdown() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            countdownInterval = setInterval(async () => {
+                if (countdownValue > 0) {
+                    countdownValue--;
+                    document.getElementById('st-timer').innerText = countdownValue;
+
+                    if (countdownValue === 0) {
+                        quickStop();
+                        await db.from('wheel_game').update({
+                            timer: 0,
+                            is_buzzer_locked: true
+                        }).eq('room_id', currentRoomId);
+                    } else {
+                        await db.from('wheel_game').update({ timer: countdownValue }).eq('room_id', currentRoomId);
+                    }
+                } else {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+        }
+
+        function stopCountdown() {
+            if (countdownInterval) clearInterval(countdownInterval);
+        }
+
+        async function resetCountdown() {
+            countdownValue = 45;
+            document.getElementById('st-timer').innerText = countdownValue;
+            stopCountdown();
+            await db.from('wheel_game').update({ timer: countdownValue }).eq('room_id', currentRoomId);
+        }
+
+        async function setTimer(seconds) {
+            countdownValue = seconds;
+            document.getElementById('st-timer').innerText = countdownValue;
+            stopCountdown();
+            await db.from('wheel_game').update({ timer: countdownValue }).eq('room_id', currentRoomId);
+
+            if (seconds === 30) {
+                const sound30 = document.getElementById('select-sound-30s')?.value;
+                if (sound30) triggerSound(sound30);
+            } else if (seconds === 10) {
+                const sound10 = document.getElementById('select-sound-10s')?.value;
+                if (sound10) triggerSound(sound10);
+            }
+
+            startCountdown();
+        }
+
+        function stopAllSounds() {
+            const soundSignal = "STOP?t=" + Date.now();
+            db.from('wheel_game')
+                .update({ current_sound: soundSignal })
+                .eq('room_id', currentRoomId);
+        }
+
+        async function revealNghia() {
+            if (!currentLayout) return;
+
+            const targetChars = ['N', 'G', 'H', 'I', 'A'];
+            let foundPositions = [];
+
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 14; c++) {
+                    let cellVal = currentLayout[r][c];
+                    let cellChar = typeof cellVal === 'object' ? (cellVal.char || cellVal.v) : cellVal;
+                    if (cellChar) {
+                        if (cellChar === 'Ă' || cellChar === 'Â') continue;
+
+                        let norm = cellChar.normalize('NFD')
+                            .replace(/[̣̀́̃̉]/g, '')
+                            .normalize('NFC')
+                            .toUpperCase();
+
+                        if (targetChars.includes(norm)) {
+                            let pos = rcToPosition(r, c);
+                            if (pos) foundPositions.push(pos);
+                        }
+                    }
+                }
+            }
+
+            void fillPositionsToController(foundPositions);
+        }
+
+        async function revealAll(isCorrect = false) {
+            usedChars = [...VIETNAMESE_ALPHABET];
+            if (isCorrect) {
+                const solveSound = document.getElementById('select-sound-solve-puzzle')?.value;
+                if (solveSound) {
+                    triggerSound(solveSound);
+                }
+            }
+            const updateData = {
+                revealed_chars: usedChars.join(','),
+                pending_positions: "",
+                is_full_reveal: true
+            };
+            if (isCorrect) {
+                updateData.border_color = 'rgb(0,255,0)';
+            }
+            await db.from('wheel_game').update(updateData).eq('room_id', currentRoomId);
+            renderKeyboard();
+        }
+
+        async function resetBoard() {
+            quickStop();
+            await db.from('wheel_game').update({
+                puzzle_text: "", category: "", revealed_chars: "",
+                pending_positions: "",
+                marked_positions: "", revealed_positions: "",
+                board_layout: "[]", is_full_reveal: false,
+                border_color: 'rgb(128,0,128)'
+            }).eq('room_id', currentRoomId);
+            usedChars = []; currentLayout = null; currentPuzzleRaw = "";
+            document.getElementById('st-puz').innerText = "-";
+            document.getElementById('st-cat').innerText = "-";
+            renderKeyboard();
+        }
+
+        async function restoreLetter(char) {
+            if (!char) return;
+            usedChars = usedChars.filter(c => c !== char);
+            renderKeyboard();
+
+            if (currentRoomId) {
+                await db.from('wheel_game').update({
+                    revealed_chars: usedChars.join(',')
+                }).eq('room_id', currentRoomId);
+            }
+        }
+
+        function renderRestoreLetters() {
+            const container = document.getElementById('restoreContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (!usedChars || usedChars.length === 0) {
+                container.innerHTML = '<span style="color: #888; font-size: 0.8rem; font-style: italic;">Chưa có chữ cái nào được đoán</span>';
+                return;
+            }
+
+            usedChars.forEach(char => {
+                if (!char) return;
+                const box = document.createElement('div');
+                box.style.cssText = 'display: inline-flex; align-items: center; gap: 6px; background: #000; padding: 4px 8px; border-radius: 4px; border: 1px solid #555;';
+
+                const letterSpan = document.createElement('span');
+                letterSpan.style.cssText = 'color: var(--neon); font-size: 1.05rem; font-weight: bold;';
+                letterSpan.innerText = char;
+
+                const btn = document.createElement('button');
+                btn.style.cssText = 'background: green; color: white; font-weight: bold !important; font-size: 0.75rem; padding: 3px 8px; border: none; border-radius: 3px; cursor: pointer; text-transform: uppercase;';
+                btn.innerText = 'Khôi phục';
+                btn.onclick = () => restoreLetter(char);
+
+                box.appendChild(letterSpan);
+                box.appendChild(btn);
+                container.appendChild(box);
+            });
+        }
+
+        async function pressKey(char) {
+            if (!usedChars.includes(char)) {
+                let positions = [];
+
+                const { data: row } = await db.from('wheel_game').select('revealed_positions').eq('room_id', currentRoomId).maybeSingle();
+                let revPos = (row && row.revealed_positions) ? row.revealed_positions.split(',').filter(Boolean).map(Number) : [];
+
+                if (currentLayout) {
+                    for (let r = 0; r < 4; r++) {
+                        for (let c = 0; c < 14; c++) {
+                            let cellVal = currentLayout[r][c];
+                            let cellChar = typeof cellVal === 'object' ? (cellVal.char || cellVal.v) : cellVal;
+                            if (cellChar) {
+                                let norm = cellChar.normalize('NFD')
+                                    .replace(/[̣̀́̃̉]/g, '')
+                                    .normalize('NFC')
+                                    .toUpperCase();
+
+                                if (norm === char) {
+                                    let pos = rcToPosition(r, c);
+                                    if (pos && !revPos.includes(pos)) {
+                                        positions.push(pos);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (positions.length > 0) {
+                    document.getElementById('numPos').value = positions.length;
+                    generatePosInputs();
+                    const inputs = document.querySelectorAll('.pos-item');
+                    positions.forEach((p, idx) => {
+                        if (inputs[idx]) inputs[idx].value = p;
+                    });
+                } else {
+                    document.getElementById('numPos').value = "";
+                    generatePosInputs();
+                }
+
+                usedChars.push(char);
+                renderKeyboard();
+
+                await db.from('wheel_game').update({
+                    revealed_chars: usedChars.join(','),
+                    pending_positions: positions.length > 0 ? positions.join(',') : ''
+                }).eq('room_id', currentRoomId);
+            }
+        }
+
+        function renderKeyboard() {
+            const kb = document.getElementById('keyboard');
+            kb.innerHTML = '';
+            VIETNAMESE_ALPHABET.forEach(char => {
+                const btn = document.createElement('button');
+                btn.innerText = char;
+                btn.className = 'key' + (usedChars.includes(char) ? ' used' : '');
+                btn.onclick = () => pressKey(char);
+                kb.appendChild(btn);
+            });
+            renderRestoreLetters();
+        }
+
+        function showPopup(title, message, actionsHtml = "") {
+            document.getElementById('modalTitle').innerText = title.toUpperCase();
+            document.getElementById('modalBody').innerHTML = message;
+            document.getElementById('modalActions').innerHTML = actionsHtml;
+            document.getElementById('mainModal').style.display = 'block';
+        }
+        function closePopup() { document.getElementById('mainModal').style.display = 'none'; }
+
+        async function changeBorderColor(color) { await db.from('wheel_game').update({ border_color: color }).eq('room_id', currentRoomId); }
+
+        async function openBuzzer() {
+            await db.from('wheel_game').update({
+                is_buzzer_locked: false,
+                buzzer_player: "",
+                border_color: 'rgb(128,0,128)'
+            }).eq('room_id', currentRoomId);
+        }
+
+        async function lockBuzzer() {
+            await db.from('wheel_game').update({
+                is_buzzer_locked: true
+            }).eq('room_id', currentRoomId);
+        }
+
+        async function resetAndOpenBuzzer() {
+            await db.from('wheel_game').update({
+                buzzer_player: "",
+                is_buzzer_locked: false,
+                border_color: 'rgb(128,0,128)'
+            }).eq('room_id', currentRoomId);
+        }
+
+        async function resetAndLockBuzzer() {
+            await db.from('wheel_game').update({
+                buzzer_player: "",
+                is_buzzer_locked: true,
+                border_color: 'rgb(128,0,128)'
+            }).eq('room_id', currentRoomId);
+        }
+
+        function formatInput(input) {
+            let val = input.value.replace(/\D/g, "");
+            input.value = val ? Number(val).toLocaleString('vi-VN') : "";
+        }
+
+        async function addScore(p, t) {
+            const val = parseInt(document.getElementById(`input-${p}`).value.replace(/\./g, "")) || 0;
+            scores[p][t] += val;
+
+            const isLastSpin = document.getElementById(`chk-${p}-last-spin`)?.checked;
+            if (!(t === 'round' && isLastSpin)) {
+                document.getElementById(`input-${p}`).value = "";
+            }
+
+            await syncScores();
+        }
+
+        async function subScore(p, t) {
+            const val = parseInt(document.getElementById(`input-${p}`).value.replace(/\./g, "")) || 0;
+            scores[p][t] -= val;
+            document.getElementById(`input-${p}`).value = "";
+            await syncScores();
+        }
+
+        async function resetScores(t) {
+            scores.red[t] = 0; scores.yellow[t] = 0; scores.blue[t] = 0;
+            await syncScores();
+        }
+
+        async function syncScores() {
+            await db.from('wheel_game').update({
+                score_red_total: scores.red.total, score_red_round: scores.red.round,
+                score_yellow_total: scores.yellow.total, score_yellow_round: scores.yellow.round,
+                score_blue_total: scores.blue.total, score_blue_round: scores.blue.round
+            }).eq('room_id', currentRoomId);
+            updateScoreUI();
+        }
+
+        function updateScoreUI() {
+            ['red', 'yellow', 'blue'].forEach(p => {
+                document.getElementById(`disp-${p}-total`).innerText = scores[p].total.toLocaleString('vi-VN');
+                document.getElementById(`disp-${p}-round`).innerText = scores[p].round.toLocaleString('vi-VN');
+            });
+        }
+
+        async function toggleDisplayScore(mode) {
+            await db.from('wheel_game').update({ score_display_mode: mode }).eq('room_id', currentRoomId);
+        }
+
+        function processSpecialGuesses() {
+            if (!currentLayout) return;
+
+            const inputs = document.querySelectorAll('.guess-input');
+            const guessedChars = Array.from(inputs)
+                .map(i => i.value.trim())
+                .filter(v => v !== "")
+                .map(v => removeVietnameseTones(v));
+
+            if (guessedChars.length === 0) {
+                showPopup("Thông báo", "Vui lòng nhập ít nhất 1 chữ cái.");
+                return;
+            }
+
+            let foundPositions = [];
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 14; c++) {
+                    let cellVal = currentLayout[r][c];
+                    let cellChar = typeof cellVal === 'object' ? (cellVal.char || cellVal.v) : cellVal;
+                    if (cellChar) {
+                        let normCell = removeVietnameseTones(cellChar);
+                        if (guessedChars.includes(normCell)) {
+                            const pos = rcToPosition(r, c);
+                            if (pos != null) foundPositions.push(pos);
+                        }
+                    }
+                }
+            }
+
+            if (foundPositions.length > 0) {
+                void fillPositionsToController(foundPositions);
+            }
+        }
+
+        async function fillPositionsToController(positions) {
+            if (positions.length === 0) {
+                await db.from('wheel_game').update({ pending_positions: '' }).eq('room_id', currentRoomId);
+                return;
+            }
+
+            positions.sort((a, b) => a - b);
+
+            const numPosInput = document.getElementById('numPos');
+            numPosInput.value = positions.length;
+            generatePosInputs();
+
+            await new Promise(r => setTimeout(r, 50));
+            const posItems = document.querySelectorAll('.pos-item');
+            positions.forEach((p, idx) => {
+                if (posItems[idx]) posItems[idx].value = p;
+            });
+
+            await db.from('wheel_game').update({
+                pending_positions: positions.join(',')
+            }).eq('room_id', currentRoomId);
+        }
+
+        function removeVietnameseTones(str) {
+            if (!str) return "";
+            str = str.toUpperCase().trim();
+            str = str.replace(/[ÁÀẢÃẠ]/g, "A");
+            str = str.replace(/[ẮẰẲẴẶ]/g, "Ă");
+            str = str.replace(/[ẤẦẨẪẬ]/g, "Â");
+            str = str.replace(/[ÉÈẺẼẸ]/g, "E");
+            str = str.replace(/[ẾỀỂỄỆ]/g, "Ê");
+            str = str.replace(/[ÍÌỈĨỊ]/g, "I");
+            str = str.replace(/[ÓÒỎÕỌ]/g, "O");
+            str = str.replace(/[ỐỒỔỖỘ]/g, "Ô");
+            str = str.replace(/[ỚỜỞỠỢ]/g, "Ơ");
+            str = str.replace(/[ÚÙỦŨỤ]/g, "U");
+            str = str.replace(/[ỨỪỬỮỰ]/g, "Ư");
+            str = str.replace(/[ÝỲỶỸỴ]/g, "Y");
+            str = str.replace(/[Đ]/g, "Đ");
+            return str;
+        }
+
+        function playBuzzer() {
+            const sound = document.getElementById('buzzerSound');
+            if (sound) {
+                sound.currentTime = 0;
+                sound.play().catch(e => console.log("Cần tương tác để phát nhạc:", e));
+            }
+        }
+
+        async function updatePlayerLight(playerColor, lightType) {
+            let updateData = {};
+            updateData[`light_${playerColor}`] = lightType;
+            await db.from('wheel_game').update(updateData).eq('room_id', currentRoomId);
+        }
+
+        async function generateRoomAndPasswords() {
+            const roomId = String(Math.floor(100000 + Math.random() * 900000));
+            const passP1 = String(Math.floor(1000 + Math.random() * 9000));
+            const passP2 = String(Math.floor(1000 + Math.random() * 9000));
+            const passP3 = String(Math.floor(1000 + Math.random() * 9000));
+
+            const { data, error } = await db.from('wheel_game').insert({
+                id: Date.now(),
+                room_id: roomId,
+                pass_player1: passP1,
+                pass_player2: passP2,
+                pass_player3: passP3,
+                is_buzzer_locked: true,
+                buzzer_player: "",
+                border_color: 'rgb(128,0,128)'
+            }).select();
+
+            if (error) {
+                console.error("Lỗi Supabase:", error.message);
+                showPopup("Lỗi", "Lỗi tạo phòng: " + error.message);
+                return;
+            }
+
+            document.getElementById('room-id-val').innerText = roomId;
+            document.getElementById('p1-pass-val').innerText = passP1;
+            document.getElementById('p2-pass-val').innerText = passP2;
+            document.getElementById('p3-pass-val').innerText = passP3;
+
+            const hostUrl = `Host.html?roomid=${roomId}`;
+            const puzzleUrl = `Puzzleboard.html?roomid=${roomId}`;
+            const p1Url = `Player1.html?roomid=${roomId}&auth=${passP1}`;
+            const p2Url = `Player2.html?roomid=${roomId}&auth=${passP2}`;
+            const p3Url = `Player3.html?roomid=${roomId}&auth=${passP3}`;
+
+            const hostLink = document.getElementById('host-link-val');
+            if (hostLink) { hostLink.href = hostUrl; hostLink.innerText = hostUrl; }
+
+            const puzzleLink = document.getElementById('puzzle-link-val');
+            if (puzzleLink) { puzzleLink.href = puzzleUrl; puzzleLink.innerText = puzzleUrl; }
+
+            const p1Link = document.getElementById('p1-link-val');
+            if (p1Link) { p1Link.href = p1Url; p1Link.innerText = `[Mở Link P1]`; }
+
+            const p2Link = document.getElementById('p2-link-val');
+            if (p2Link) { p2Link.href = p2Url; p2Link.innerText = `[Mở Link P2]`; }
+
+            const p3Link = document.getElementById('p3-link-val');
+            if (p3Link) { p3Link.href = p3Url; p3Link.innerText = `[Mở Link P3]`; }
+
+            document.getElementById('room-info-display').style.display = 'block';
+            document.getElementById('lockOverlay').style.display = 'none';
+
+            currentRoomId = roomId;
+            await loadCurrentState();
+            setupRealtime();
+
+            showPopup("Tạo phòng", "Đã tạo phòng thành công!");
+        }
+
+        async function multiplyScore(player, factor) {
+            if (scores[player]) {
+                scores[player].round = Math.round(scores[player].round * factor);
+                await syncScores();
+            }
+        }
+
+        async function resetPlayerScore(player, type) {
+            if (scores[player] && (type === 'round' || type === 'total')) {
+                scores[player][type] = 0;
+                await syncScores();
+            }
+        }
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.keyCode === 123) e.preventDefault();
+            if ((e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+
+</html>
