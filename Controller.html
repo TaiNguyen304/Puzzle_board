@@ -24,6 +24,7 @@
             display: grid;
             grid-template-columns: 1fr 350px;
             gap: 20px;
+            align-items: start;
         }
 
         .panel {
@@ -691,8 +692,20 @@
             <button style="background: green; color: white; font-size: 0.75rem; padding: 8px 2px; flex: 1;"
                 onclick="triggerSound('tossup.mp3')">Đoán nhanh</button>
         </div>
+    </div>
+
+    <div class="right-col">
         <div class="panel">
-            <h3>3. BÀN PHÍM ĐIỀU KHIỂN</h3>
+            <h3>TRẠNG THÁI HIỆN TẠI</h3>
+            <p>Vòng: <span id="st-round" class="st-val">-</span></p>
+            <p>Chủ đề: <span id="st-cat" class="st-val">-</span></p>
+            <p>Ô chữ: <span id="st-puz" class="st-val">-</span></p>
+            <p>Đồng hồ ĐB: <span id="st-timer" class="st-val">45</span>s</p>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3>3. BÀN PHÍM ĐIỀU KHIỂN</h3>
             <div id="keyboard" class="keyboard"></div>
 
             <div class="pos-control">
@@ -751,18 +764,9 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="right-col">
-        <div class="panel">
-            <h3>TRẠNG THÁI HIỆN TẠI</h3>
-            <p>Vòng: <span id="st-round" class="st-val">-</span></p>
-            <p>Chủ đề: <span id="st-cat" class="st-val">-</span></p>
-            <p>Ô chữ: <span id="st-puz" class="st-val">-</span></p>
-            <p>Đồng hồ ĐB: <span id="st-timer" class="st-val">45</span>s</p>
-        </div>
-
-        <div class="color-control-section" style="margin-top: 20px; border-top: 1px solid #333;">
+    <div class="right-col" style="margin-top: -360px;">
+        <div class="color-control-section" style="border-top: none; margin-top: 0;">
             <h3 style="color: #ff00cc; font-size: 14px; margin-bottom: 10px;">MÀU VIỀN Ô CHỮ</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                 <button onclick="changeBorderColor('rgb(128,0,128)')"
@@ -781,7 +785,7 @@
             </div>
         </div>
 
-        <div class="score-control-section" style="margin-top: 20px;">
+        <div class="score-control-section" style="margin-top: 15px;">
             <div class="player-panel"
                 style="border: 1px solid #444; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
                 <p style="margin: 0 0 5px 0; color: red; font-size: 12px;">NC ĐỎ</p>
